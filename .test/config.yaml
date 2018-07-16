@@ -5,6 +5,8 @@ restriction-enzyme:
   p5: nsiI
   p7: csp6I
 
+adapter: ""
+
 params:
   stacks:
     - max_individual_mm: 4

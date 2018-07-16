@@ -48,8 +48,8 @@ rule remove_duplicates:
         "nodup/{individual}.2.fq.gz"
     shell:
         # TODO remove trimming, properly handle DBR to remove duplicates
-        "seqtk trimfq -L91 {input[0]} | gzip -c > {output[0]}; "
-        "seqtk trimfq -L91 {input[1]} | gzip -c > {output[1]};"
+        "cp {input[0]} {output[0]}; "
+        "cp {input[1]} {output[1]};"
 
 
 rule trim:
@@ -57,13 +57,24 @@ rule trim:
         "nodup/{individual}.1.fq.gz",
         "nodup/{individual}.2.fq.gz"
     output:
-        fastq1="trimmed/{individual}.1.fq.gz",
-        fastq2="trimmed/{individual}.2.fq.gz",
+        fastq1="trimmed-adapter/{individual}.1.fq.gz",
+        fastq2="trimmed-adapter/{individual}.2.fq.gz",
         qc="trimmed/{individual}.qc.txt"
     params:
-        config["params"]["cutadapt"]
+        config["params"]["cutadapt"] + (
+            "-a {}".format(config["adapter"]) if config["adapter"] else "")
     wrapper:
         "0.27.1/bio/cutadapt/pe"
+
+
+rule force_same_length:
+    input:
+        "trimmed-adapter/{individual}.{read}.fq.gz"
+    output:
+        "trimmed/{individual}.{read}.fq.gz"
+    shell:
+        "len=`seqtk fqchk {input} | grep -oP 'min_len: \\K[0-9]+'`; "
+        "seqtk trimfq -L$len {input} | gzip -c > {output}"
 
 
 rule population_map:
