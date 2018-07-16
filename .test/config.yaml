@@ -28,3 +28,4 @@ params:
   # command line parameters for gstacks, except -I, -O, -B
   gstacks: ""
   process_radtags: "--inline_null -c -q -r --barcode_dist_1 3 -D"
+  cutadapt: "-q 20"
