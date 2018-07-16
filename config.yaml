@@ -27,3 +27,4 @@ params:
       min_reads: 3
   # command line parameters for gstacks, except -I, -O, -B
   gstacks: ""
+  process_radtags: "--index_null"

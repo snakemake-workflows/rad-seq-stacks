@@ -1,50 +1,72 @@
-def get_fastq(wildcards):
-    return units.loc[individuals.loc[wildcards.individual, "unit"], ["fq1", "fq2"]]
-
 
 rule barcodes:
     output:
         "barcodes/{unit}.tsv"
     run:
-        individuals[["barcode", "id"]].to_csv(output[0], header=None)
+        d = individuals[["p5_barcode", "id"]]
+        #d["p7_barcode"] = units.loc[wildcards.unit, "p7_barcode"]
+        d[["p5_barcode", "id"]].to_csv(output[0], index=False, header=None, sep="\t")
 
+
+rule trim_spacer:
+    input:
+        lambda w: units.loc[w.unit, "fq2"]
+    output:
+        "trimmed-spacer/{unit}.2.fq.gz"
+    conda:
+        "../envs/seqtk.yaml"
+    shell:
+        "seqtk trimfq -b3 {input} > {output}"
 
 
 rule extract:
     input:
-        reads=get_fastq,
-        barcodes=lambda w: "barcodes/{unit}.tsv".format(unit=individuals.loc[w.individual, "unit"])
+        fq1=units.fq1,
+        fq2=expand("trimmed-spacer/{unit}.2.fq.gz", unit=units.id),
+        barcodes=expand("barcodes/{unit}.tsv", unit=units.id)
     output:
-        "extracted/{individual}.R1.fastq.gz",
-        "extracted/{individual}.R2.fastq.gz"
+        expand(["extracted/{individual}.1.fq.gz",
+                "extracted/{individual}.2.fq.gz"],
+               individual=individuals.id)
     params:
-        enzymes=config["restriction-enzyme"]
+        enzymes=config["restriction-enzyme"],
+        outdir=get_outdir,
+        units=units,
+        extra=config["params"]["process_radtags"]
     conda:
         "../envs/stacks.yaml"
-    shell:
-        "process_radtags -1 {input[0]} -2 {input[0]} "
-        "--renz_1 {params.enzymes[p5]} --renz_2 {params.enzymes[p7]} "
-        "-b {input.barcodes}"
+    script:
+        "../scripts/extract-individuals.py"
 
 
 rule remove_duplicates:
     input:
-        "extracted/{individual}.R1.fastq.gz",
-        "extracted/{individual}.R2.fastq.gz"
+        "extracted/{individual}.1.fq.gz",
+        "extracted/{individual}.2.fq.gz"
     output:
-        "nodup/{individual}.R1.fastq.gz",
-        "nodup/{individual}.R2.fastq.gz"
+        "nodup/{individual}.1.fq.gz",
+        "nodup/{individual}.2.fq.gz"
     shell:
-        "cp {input[0]} {output[0]}; cp {input[1]} {output[1]}; "
+        "seqtk trimfq -L91 {input[0]} | gzip -c > {output[0]}; "
+        "seqtk trimfq -L91 {input[1]} | gzip -c > {output[1]}; "
 
 
 rule trim:
     input:
-        "nodup/{individual}.R1.fastq.gz",
-        "nodup/{individual}.R2.fastq.gz"
+        "nodup/{individual}.1.fq.gz",
+        "nodup/{individual}.2.fq.gz"
     output:
-        fastq1="trimmed/{individual}.R1.fastq.gz",
-        fastq2="trimmed/{individual}.R2.fastq.gz",
+        fastq1="trimmed/{individual}.1.fq.gz",
+        fastq2="trimmed/{individual}.2.fq.gz",
         qc="trimmed/{individual}.qc.txt"
     wrapper:
         "0.27.1/bio/cutadapt/pe"
+
+
+rule population_map:
+    output:
+        "population-map.tsv"
+    run:
+        d = individuals[["id"]]
+        d["pop"] = 1
+        d.to_csv(output[0], index=False, header=None, sep="\t")
