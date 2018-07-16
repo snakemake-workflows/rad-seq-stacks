@@ -13,15 +13,17 @@ rule barcodes:
 rule extract:
     input:
         reads=get_fastq,
-        barcodes="barcodes/{unit}.tsv"
+        barcodes=lambda w: "barcodes/{unit}.tsv".format(unit=individuals.loc[w.individual, "unit"])
     output:
         "extracted/{individual}.R1.fastq.gz",
         "extracted/{individual}.R2.fastq.gz"
     params:
         enzymes=config["restriction-enzyme"]
+    conda:
+        "../envs/stacks.yaml"
     shell:
         "process_radtags -1 {input[0]} -2 {input[0]} "
-        "--renz_1 {params.enzymes[0] --renz_2 {params.enzymes[1]} "
+        "--renz_1 {params.enzymes[p5]} --renz_2 {params.enzymes[p7]} "
         "-b {input.barcodes}"
 
 

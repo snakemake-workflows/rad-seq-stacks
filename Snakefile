@@ -1,14 +1,17 @@
-# The main entry point of your workflow.
-# After configuring, running snakemake -n in a clone of this repository should successfully execute a dry-run of the workflow.
-
+import pandas as pd
 
 configfile: "config.yaml"
 
 
+individuals = pd.read_table("individuals.tsv").set_index("id", drop=False)
+units = pd.read_table("units.tsv").set_index("id", drop=False)
+
+
 rule all:
     input:
-        # The first rule should define the default target files
-        # Subsequent target rules can be specified below. They should start with all_*.
+        expand("gstacks/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/calls.vcf",
+               p=config["params"]["stacks"])
 
 
-include: "rules/other.smk"
+include: "rules/preprocessing.smk"
+include: "rules/stacks.smk"

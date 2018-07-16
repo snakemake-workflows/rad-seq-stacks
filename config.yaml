@@ -1,25 +1,29 @@
 individuals: individuals.tsv
 units: units.tsv
 
+restriction-enzyme:
+  p5: NsiI
+  p7: Csp6I
+
 params:
   stacks:
-    - individual: 4
-      locus: 4
+    - max_individual_mm: 4
+      max_locus_mm: 4
       min_reads: 3
-    - individual: 5
-      locus: 5
+    - max_individual_mm: 5
+      max_locus_mm: 5
       min_reads: 3
-    - individual: 6
-      locus: 6
+    - max_individual_mm: 6
+      max_locus_mm: 6
       min_reads: 3
-    - individual: 4
-      locus: 5
+    - max_individual_mm: 4
+      max_locus_mm: 5
       min_reads: 3
-    - individual: 5
-      locus: 6
+    - max_individual_mm: 5
+      max_locus_mm: 6
       min_reads: 3
-    - individual: 6
-      locus: 7
+    - max_individual_mm: 6
+      max_locus_mm: 7
       min_reads: 3
   # command line parameters for gstacks, except -I, -O, -B
   gstacks: ""
