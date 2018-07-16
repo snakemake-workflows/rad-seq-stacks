@@ -47,8 +47,9 @@ rule remove_duplicates:
         "nodup/{individual}.1.fq.gz",
         "nodup/{individual}.2.fq.gz"
     shell:
+        # TODO remove trimming, properly handle DBR to remove duplicates
         "seqtk trimfq -L91 {input[0]} | gzip -c > {output[0]}; "
-        "seqtk trimfq -L91 {input[1]} | gzip -c > {output[1]}; "
+        "seqtk trimfq -L91 {input[1]} | gzip -c > {output[1]};"
 
 
 rule trim:
@@ -59,6 +60,8 @@ rule trim:
         fastq1="trimmed/{individual}.1.fq.gz",
         fastq2="trimmed/{individual}.2.fq.gz",
         qc="trimmed/{individual}.qc.txt"
+    params:
+        config["params"]["cutadapt"]
     wrapper:
         "0.27.1/bio/cutadapt/pe"
 
