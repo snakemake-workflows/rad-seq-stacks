@@ -1,0 +1,93 @@
+---
+Individual Information:
+  Individual 78:
+    dbr: ''
+    p5 bc: GCCAAT
+    p5 overhang: TGCAT
+    p5 spacer: ''
+    p7 bc: GGCTAC
+    p7 overhang: TAC
+    p7 spacer: CGA
+  Individual 80:
+    dbr: ''
+    p5 bc: ACTTGA
+    p5 overhang: TGCAT
+    p5 spacer: GAC
+    p7 bc: GGCTAC
+    p7 overhang: TAC
+    p7 spacer: CGA
+  Individual 92:
+    dbr: ''
+    p5 bc: GTTTCG
+    p5 overhang: TGCAT
+    p5 spacer: ''
+    p7 bc: GGCTAC
+    p7 overhang: TAC
+    p7 spacer: CGA
+---
+Locus 0:
+  allele coverages:
+    0: 111
+  allele frequencies:
+    0: 1.0
+  coverage: 111
+  id reads: 0
+  individuals:
+    Individual 78:
+      0:
+        cov: 40
+        mutations: []
+    Individual 80:
+      0:
+        cov: 36
+        mutations: []
+    Individual 92:
+      0:
+        cov: 35
+        mutations: []
+  p5 seq: GCGCCATCTTAGAATTCGGTGAAACGGTCTACGCGCCAATGTAGTTCTCGTAGAAAGTGAGGCGACTTTATAGTGAAGCTCTTGCCTGA
+  p7 seq: CGAGGGTCGTCATTACATTAGCCTCAAGGCCACCCGCATAATTTTATGCGTATCCGTGGCCGTTTACAAGGAAGCGCCAGATAGACCTATTAGC
+Locus 1:
+  allele coverages:
+    0: 107
+  allele frequencies:
+    0: 1.0
+  coverage: 107
+  id reads: 0
+  individuals:
+    Individual 78:
+      0:
+        cov: 37
+        mutations: []
+    Individual 80:
+      0:
+        cov: 33
+        mutations: []
+    Individual 92:
+      0:
+        cov: 37
+        mutations: []
+  p5 seq: GAATCCTGCGGGGACACAGGGCGACTAGGCGTTTTTCCGCGTTGTCCAGGAACGAGGTTACTGTAGAGGGGATTGTGCGAATCCATTTT
+  p7 seq: GGCTTGCCACACCGCGGGCTGAGGAAGTGCATTGTCCTCGAGGATACTGGTCGGCCAACCTCTAATTTGTGCTCCTAAGCATAAAACTTTGGTT
+Locus 2:
+  allele coverages:
+    0: 68
+  allele frequencies:
+    0: 1.0
+  coverage: 68
+  id reads: 0
+  individuals:
+    Individual 78:
+      0:
+        cov: 19
+        mutations: []
+    Individual 80:
+      0:
+        cov: 27
+        mutations: []
+    Individual 92:
+      0:
+        cov: 22
+        mutations: []
+  p5 seq: TTCAACTGTGTGCCTATAGGGGCAAGGCTACTTTCCGTATGAGGCACGAACTATCATTATCAATTCACTGTAGAAATTGCGGACAACAC
+  p7 seq: AGACCGACAAGTTTAGGGGAGTAAACGACACGCACTTAAGTGCAAGCCAACGCTCTGCTGATGCGAGCACTGGTCTGACGTGTGGATTCTATAA

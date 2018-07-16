@@ -1,0 +1,30 @@
+individuals: individuals.tsv
+units: units.tsv
+
+restriction-enzyme:
+  p5: nsiI
+  p7: csp6I
+
+params:
+  stacks:
+    - max_individual_mm: 4
+      max_locus_mm: 4
+      min_reads: 3
+    - max_individual_mm: 5
+      max_locus_mm: 5
+      min_reads: 3
+    - max_individual_mm: 6
+      max_locus_mm: 6
+      min_reads: 3
+    - max_individual_mm: 4
+      max_locus_mm: 5
+      min_reads: 3
+    - max_individual_mm: 5
+      max_locus_mm: 6
+      min_reads: 3
+    - max_individual_mm: 6
+      max_locus_mm: 7
+      min_reads: 3
+  # command line parameters for gstacks, except -I, -O, -B
+  gstacks: ""
+  process_radtags: "--inline_null -c -q -r --barcode_dist_1 3 -D"
