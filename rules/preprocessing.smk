@@ -54,6 +54,8 @@ rule remove_duplicates:
         "dedup/{unit}.dbr-grouped.bam"
     output:
         "dedup/{unit}.consensus.bam"
+    conda:
+        "../envs/fgbio.yaml"
     shell:
         "fgbio CallMolecularConsensusReads --input {input} --output {output}"
 
@@ -64,6 +66,8 @@ rule bam_to_fastq:
     output:
         "dedup/{unit}.consensus.1.fq.gz",
         "dedup/{unit}.consensus.2.fq.gz"
+    conda:
+        "../envs/samtools.yaml"
     shell:
         "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
 
