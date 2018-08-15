@@ -1,6 +1,0 @@
-#  Ind.	p5 bc	p7 bc	p5 spc	p7 spc	Annotation
-Individual 31	CAGATC	ACTTGA		G	Annotation 2
-Individual 32	ACTTGA	ACTTGA	GAC	G	Annotation 2
-Individual 34	TAGCTT	ACTTGA	AC	G	Annotation 2
-Individual 36	CTTGTA	ACTTGA	GAC	G	Annotation 2
-Individual 48	ATTCCT	ACTTGA	C	G	Annotation 2
