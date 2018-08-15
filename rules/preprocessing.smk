@@ -14,11 +14,11 @@ rule trim_p7_spacer:
     output:
         "trimmed-spacer/{unit}.2.fq.gz"
     params:
-        spacer=lambda w: units["p7_spacer"]
+        spacer=lambda w: units.loc[w.unit, "p7_spacer"]
     conda:
         "../envs/seqtk.yaml"
     shell:
-        "seqtk trimfq -b {params.spacer} {input} > {output}"
+        "seqtk trimfq -b {params.spacer} {input} | gzip > {output}"
 
 
 rule fastq_to_bam:
@@ -37,15 +37,31 @@ rule fastq_to_bam:
         "--read-structures +T {params.dbr}M+T"
 
 
-rule group_by_dbr:
+rule fake_mapping:
     input:
         "dedup/{unit}.dbr-annotated.bam"
     output:
+        "dedup/{unit}.fake-mapping.bam"
+    conda:
+        "../envs/pysam.yaml"
+    script:
+        "../scripts/fake-mapping.py"
+
+
+rule group_by_dbr:
+    input:
+        "dedup/{unit}.fake-mapping.bam"
+    output:
         "dedup/{unit}.dbr-grouped.bam"
+    params:
+        strategy=config["dbr"]["grouping-strategy"]
     conda:
         "../envs/fgbio.yaml"
     shell:
-        "fgbio GroupReadsByUmi --input {input} --output {output}"
+        #"umi_tools group -I {input} --paired --output-bam -S {output} "
+        #"--umi-group-tag MI"
+        "fgbio GroupReadsByUmi --input {input} --output {output} "
+        "--strategy {params.strategy} --min-map-q 0 --include-non-pf-reads"
 
 
 
@@ -57,7 +73,8 @@ rule generate_consensus_reads:
     conda:
         "../envs/fgbio.yaml"
     shell:
-        "fgbio CallMolecularConsensusReads --input {input} --output {output}"
+        "fgbio CallMolecularConsensusReads --input {input} --output {output} "
+        "--min-reads 1"
 
 
 rule bam_to_fastq:
@@ -74,7 +91,7 @@ rule bam_to_fastq:
 
 rule extract:
     input:
-        fq2=expand("dedup/{unit}.consensus.1.fq.gz", unit=units.id),
+        fq1=expand("dedup/{unit}.consensus.1.fq.gz", unit=units.id),
         fq2=expand("dedup/{unit}.consensus.2.fq.gz", unit=units.id),
         barcodes=expand("barcodes/{unit}.tsv", unit=units.id)
     output:

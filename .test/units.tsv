@@ -1,3 +1,3 @@
 id	p7_barcode	p7_spacer	fq1	fq2
-1	ATCACG	0	data/reads_ACTTGA_1_noheader.fq.gz	data/ddRAGEdataset_ACTTGA_2_noheader.fq.gz
-2	ACTTGA	2	data/reads_ATCACG_1_noheader.fq.gz	data/ddRAGEdataset_ATCACG_2_noheader.fq.gz
+2	ACTTGA	2	data/reads_ACTTGA_1_noheader.fq.gz	data/reads_ACTTGA_2_noheader.fq.gz
+1	ATCACG	0	data/reads_ATCACG_1_noheader.fq.gz	data/reads_ATCACG_2_noheader.fq.gz

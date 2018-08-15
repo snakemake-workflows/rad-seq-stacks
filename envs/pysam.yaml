@@ -2,5 +2,4 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - samtools =1.7
-  - bioawk =1.0
+  - pysam =0.15
