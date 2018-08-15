@@ -5,6 +5,9 @@ restriction-enzyme:
   p5: nsiI
   p7: csp6I
 
+dbr:
+  len: 13
+
 adapter: ""
 
 params:

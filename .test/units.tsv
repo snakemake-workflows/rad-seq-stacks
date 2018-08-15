@@ -1,2 +1,3 @@
-id	p7_barcode	fq1	fq2
-1	CGA	data/ddRAGEdataset_GGCTAC_clean_1.fastq	data/ddRAGEdataset_GGCTAC_clean_2.fastq
+id	p7_barcode	p7_spacer	fq1	fq2
+1	ATCACG	3	data/ddRAGEdataset_GGCTAC_1_noheader.fastq	data/ddRAGEdataset_GGCTAC_2_noheader.fastq
+2	ACTTGA	3	

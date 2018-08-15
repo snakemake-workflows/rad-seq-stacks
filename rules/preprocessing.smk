@@ -8,21 +8,70 @@ rule barcodes:
         d[["p5_barcode", "id"]].to_csv(output[0], index=False, header=None, sep="\t")
 
 
-rule trim_spacer:
+rule trim_p7_spacer:
     input:
         lambda w: units.loc[w.unit, "fq2"]
     output:
         "trimmed-spacer/{unit}.2.fq.gz"
+    params:
+        spacer=lambda w: units["p7_spacer"]
     conda:
         "../envs/seqtk.yaml"
     shell:
-        "seqtk trimfq -b3 {input} > {output}"
+        "seqtk trimfq -b {params.spacer} {input} > {output}"
+
+
+rule fastq_to_bam:
+    input:
+        lambda w: units.loc[w.unit, "fq1"],
+        "trimmed-spacer/{unit}.2.fq.gz"
+    output:
+        "dedup/{unit}.dbr-annotated.bam"
+    params:
+        dbr=config["dbr"]["len"]
+    conda:
+        "../envs/fgbio.yaml"
+    shell:
+        "fgbio FastqToBam --input {input} --output {output} "
+        "--sample {wildcards.unit} --library rad-seq "
+        "--read-structures +T {params.dbr}M+T"
+
+
+rule group_by_dbr:
+    input:
+        "dedup/{unit}.dbr-annotated.bam"
+    output:
+        "dedup/{unit}.dbr-grouped.bam"
+    conda:
+        "../envs/fgbio.yaml"
+    shell:
+        "fgbio GroupReadsByUmi --input {input} --output {output}"
+
+
+
+rule remove_duplicates:
+    input:
+        "dedup/{unit}.dbr-grouped.bam"
+    output:
+        "dedup/{unit}.consensus.bam"
+    shell:
+        "fgbio CallMolecularConsensusReads --input {input} --output {output}"
+
+
+rule bam_to_fastq:
+    input:
+        "dedup/{unit}.consensus.bam"
+    output:
+        "dedup/{unit}.consensus.1.fq.gz",
+        "dedup/{unit}.consensus.2.fq.gz"
+    shell:
+        "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
 
 
 rule extract:
     input:
-        fq1=units.fq1,
-        fq2=expand("trimmed-spacer/{unit}.2.fq.gz", unit=units.id),
+        fq2=expand("dedup/{unit}.consensus.1.fq.gz", unit=units.id),
+        fq2=expand("dedup/{unit}.consensus.2.fq.gz", unit=units.id),
         barcodes=expand("barcodes/{unit}.tsv", unit=units.id)
     output:
         expand(["extracted/{individual}.1.fq.gz",
@@ -37,19 +86,6 @@ rule extract:
         "../envs/stacks.yaml"
     script:
         "../scripts/extract-individuals.py"
-
-
-rule remove_duplicates:
-    input:
-        "extracted/{individual}.1.fq.gz",
-        "extracted/{individual}.2.fq.gz"
-    output:
-        "nodup/{individual}.1.fq.gz",
-        "nodup/{individual}.2.fq.gz"
-    shell:
-        # TODO remove trimming, properly handle DBR to remove duplicates
-        "cp {input[0]} {output[0]}; "
-        "cp {input[1]} {output[1]};"
 
 
 rule trim:
