@@ -16,6 +16,7 @@ rule trim_spacer:
     conda:
         "../envs/seqtk.yaml"
     shell:
+        # TODO look up spacer length in units.tsv
         "seqtk trimfq -b3 {input} > {output}"
 
 
