@@ -49,7 +49,7 @@ rule group_by_dbr:
 
 
 
-rule remove_duplicates:
+rule generate_consensus_reads:
     input:
         "dedup/{unit}.dbr-grouped.bam"
     output:
@@ -94,8 +94,8 @@ rule extract:
 
 rule trim:
     input:
-        "nodup/{individual}.1.fq.gz",
-        "nodup/{individual}.2.fq.gz"
+        "extracted/{individual}.1.fq.gz",
+        "extracted/{individual}.2.fq.gz"
     output:
         fastq1="trimmed-adapter/{individual}.1.fq.gz",
         fastq2="trimmed-adapter/{individual}.2.fq.gz",
