@@ -1,5 +1,5 @@
 Configuration
-barcode set                              None
+barcode set                 test_barcodes.txt
 dbr sequence                    NNNNNNMMGGACG
 diversity parameter                       2.0
 individual names                           I1
@@ -11,7 +11,7 @@ nr of individuals                           5
 nr of loci                                100
 p5 overhang                             TGCAT
 p5 recognition site                    ATGCAT
-p7 barcode               ['ATCACG', 'ACTTGA']
+p7 barcode               ['ACTTGA', 'ATCACG']
 p7 overhang                               TAC
 p7 recogintion site                      GTAC
 prob. seq error                          0.01
@@ -23,24 +23,24 @@ used coverage model              BetaBinomial
 Statistics:
 
 Total:
-total reads                             41919
-pcr copies                              11194
-pcr copy rate                            0.27
+total reads                             36639
+pcr copies                               9566
+pcr copy rate                            0.26
 
 Only Valid Reads (Without Singletons and HRL reads):
-locus reads                             19451
-pcr copies                               5594
-pcr copy rate                            0.29
+locus reads                             18430
+pcr copies                               5148
+pcr copy rate                            0.28
 
 Only Singletons:
-singletons                               2582
-pcr copies                                270
-pcr copy rate                            0.10
+singletons                               2465
+pcr copies                                263
+pcr copy rate                            0.11
 
 Only HRL Reads:
-HRL reads                               19886
-pcr copies                               5330
-pcr copy rate                            0.27
+HRL reads                               15744
+pcr copies                               4155
+pcr copy rate                            0.26
 
 
 Dropout:
@@ -91,7 +91,7 @@ hrl_pcr_copies                                           0.9                    
 singleton_pcr_copies                      0.3333333333333333                         float
 prob_seq_error                                          0.01                         float
 verbosity                                                  0                           int
-zip_output                                             False                          bool
+zip_output                                              True                          bool
 get_barcodes                                           False                          bool
 debug_run                                              False                          bool
 nr_loci                                                  100                           int
