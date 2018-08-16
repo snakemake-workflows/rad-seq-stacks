@@ -1,0 +1,60 @@
+
+
+rule all:
+    input:
+        expand("reads_{barcodes}_{orientation}.fastq.gz", barcodes=["ACTTGA", "ATCACG"], orientation=(1,2)),
+        expand("reads_{barcodes}_{orientation}_noheader.fastq.gz", barcodes=["ACTTGA", "ATCACG"], orientation=(1,2)),
+        expand("reads_{barcodes}_{orientation}_annotation.txt", barcodes=["ACTTGA", "ATCACG"], orientation=(1,2)),
+        expand("raw_dataset/ddRAGEdataset_2_p7_barcodes_{orientation}.fastq.gz", orientation=(1,2)),
+        "raw_dataset/ddRAGEdataset_2_p7_barcodes_barcodes.txt",
+        "raw_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_annotation.txt",
+        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_statstics.pdf",
+
+
+rule split_p7:
+    input:
+        p5 = "raw_dataset/ddRAGEdataset_2_p7_barcodes_1.fastq.gz",
+        p7 = "raw_dataset/ddRAGEdataset_2_p7_barcodes_2.fastq.gz",
+    output:
+        expand("reads_{barcodes}_{orientation}.fastq.gz", barcodes=["ACTTGA", "ATCACG"], orientation=(1,2)),
+    conda:
+        "../../envs/testdata.yaml"
+    shell:
+        "split_by_p7_barcode {input.p5} {input.p7}"
+
+
+rule remove_annotation:
+    input:
+        "reads_{barcode}_{orientation}.fastq.gz",
+    output:
+        "reads_{barcode}_{orientation}_noheader.fastq.gz",
+        "reads_{barcode}_{orientation}_annotation.txt",
+    conda:
+        "../../envs/testdata.yaml"
+    shell:
+        "remove_annotation {input[0]}"
+    
+
+rule rage:
+    output:
+        expand("raw_dataset/ddRAGEdataset_2_p7_barcodes_{orientation}.fastq.gz", orientation=(1,2)),
+        "raw_dataset/ddRAGEdataset_2_p7_barcodes_barcodes.txt",
+        "raw_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_annotation.txt",
+        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_statstics.pdf",
+    params:
+        n = 5,  # 5 individuals, this is exactly the number of individuals available in the barcodes file
+        l = 100,  # 100 loci
+        bc_file = "test_barcodes.txt",  # file with individual information
+        event_probs = " ".join([str(p) for p in (0.8, 0.1, 0.1)]),  # probabilities of common, dropout, mutation events
+        diversity = 2.0,  # expected nr of aleles per locus
+    conda:
+        "../../envs/testdata.yaml"
+    shell:
+        """
+        rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes --event-probabilities {params.event_probs} --diversity {params.diversity} -z
+        
+        mv $(python -c "import glob;print(sorted(glob.glob('*ddRAGEdataset'))[-1], end='/*')") raw_dataset
+        
+        """
