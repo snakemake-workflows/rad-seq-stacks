@@ -3,7 +3,8 @@ rule barcodes:
     output:
         "barcodes/{unit}.tsv"
     run:
-        d = individuals[["p5_barcode", "id"]]
+        
+        d = individuals.loc[individuals.unit == wildcards.unit, ["p5_barcode", "id"]]
         #d["p7_barcode"] = units.loc[wildcards.unit, "p7_barcode"]
         d[["p5_barcode", "id"]].to_csv(output[0], index=False, header=None, sep="\t")
 
