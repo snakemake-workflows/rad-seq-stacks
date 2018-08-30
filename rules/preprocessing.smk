@@ -99,6 +99,9 @@ rule extract:
         expand(["extracted/{individual}.1.fq.gz",
                 "extracted/{individual}.2.fq.gz"],
                individual=individuals.id)
+    log:
+        expand("logs/extract/{individual}.log",
+               individual=individuals.id)
     params:
         enzymes=config["restriction-enzyme"],
         outdir=get_outdir,
