@@ -23,24 +23,24 @@ used coverage model              BetaBinomial
 Statistics:
 
 Total:
-total reads                             36639
-pcr copies                               9566
-pcr copy rate                            0.26
+total reads                             40244
+pcr copies                              10677
+pcr copy rate                            0.27
 
 Only Valid Reads (Without Singletons and HRL reads):
-locus reads                             18430
-pcr copies                               5148
+locus reads                             18825
+pcr copies                               5345
 pcr copy rate                            0.28
 
 Only Singletons:
-singletons                               2465
-pcr copies                                263
-pcr copy rate                            0.11
+singletons                               2506
+pcr copies                                317
+pcr copy rate                            0.13
 
 Only HRL Reads:
-HRL reads                               15744
-pcr copies                               4155
-pcr copy rate                            0.26
+HRL reads                               18913
+pcr copies                               5015
+pcr copy rate                            0.27
 
 
 Dropout:
@@ -94,4 +94,5 @@ verbosity                                                  0                    
 zip_output                                              True                          bool
 get_barcodes                                           False                          bool
 debug_run                                              False                          bool
+version                                                False                          bool
 nr_loci                                                  100                           int
