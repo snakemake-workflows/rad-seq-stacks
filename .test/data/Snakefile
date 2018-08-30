@@ -19,7 +19,7 @@ rule split_p7:
     output:
         expand("reads_{barcodes}_{orientation}.fastq.gz", barcodes=["ACTTGA", "ATCACG"], orientation=(1,2)),
     conda:
-        "../../envs/testdata.yml"
+        "../../envs/testdata.yaml"
     shell:
         "split_by_p7_barcode {input.p5} {input.p7}"
 
@@ -31,7 +31,7 @@ rule remove_annotation:
         "reads_{barcode}_{orientation}_noheader.fastq.gz",
         "reads_{barcode}_{orientation}_annotation.txt",
     conda:
-        "../../envs/testdata.yml"
+        "../../envs/testdata.yaml"
     shell:
         "remove_annotation {input[0]}"
     
@@ -50,7 +50,7 @@ rule rage:
         event_probs = " ".join([str(p) for p in (0.8, 0.1, 0.1)]),  # probabilities of common, dropout, mutation events
         diversity = 2.0,  # expected nr of aleles per locus
     conda:
-        "../../envs/testdata.yml"
+        "../../envs/testdata.yaml"
     shell:
         """
         rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes --event-probabilities {params.event_probs} --diversity {params.diversity} -z
