@@ -129,6 +129,8 @@ rule force_same_length:
         "trimmed-adapter/{individual}.{read}.fq.gz"
     output:
         "trimmed/{individual}.{read}.fq.gz"
+    conda:
+        "../envs/seqtk.yaml"
     shell:
         "len=`seqtk fqchk {input} | grep -oP 'min_len: \\K[0-9]+'`; "
         "seqtk trimfq -L$len {input} | gzip -c > {output}"
