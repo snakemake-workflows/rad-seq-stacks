@@ -11,7 +11,7 @@ nr of individuals                           5
 nr of loci                                100
 p5 overhang                             TGCAT
 p5 recognition site                    ATGCAT
-p7 barcode               ['ACTTGA', 'ATCACG']
+p7 barcode               ['ACTTGA', 'GTCCGC']
 p7 overhang                               TAC
 p7 recogintion site                      GTAC
 prob. seq error                          0.01
@@ -23,31 +23,31 @@ used coverage model              BetaBinomial
 Statistics:
 
 Total:
-total reads                             40244
-pcr copies                              10677
+total reads                             39163
+pcr copies                              10429
 pcr copy rate                            0.27
 
 Only Valid Reads (Without Singletons and HRL reads):
-locus reads                             18825
-pcr copies                               5345
-pcr copy rate                            0.28
+locus reads                             18682
+pcr copies                               5387
+pcr copy rate                            0.29
 
 Only Singletons:
-singletons                               2506
-pcr copies                                317
-pcr copy rate                            0.13
+singletons                               2475
+pcr copies                                288
+pcr copy rate                            0.12
 
 Only HRL Reads:
-HRL reads                               18913
-pcr copies                               5015
-pcr copy rate                            0.27
+HRL reads                               18006
+pcr copies                               4754
+pcr copy rate                            0.26
 
 
 Dropout:
 dropped out loci                            0
 
 
-               |    1 ATCACG   |    8 ACTTGA   |
+               |    1 GTCCGC   |    8 ACTTGA   |
 ---------------|---------------|---------------|
     1 ATCACG   |      I1       |      I3       |
     2 CGATGT   |       -       |      I4       |
