@@ -5,7 +5,7 @@
 4	TGACCA
 
 # p7 barcodes
-1	ATCACG
+1	GTCCGC
 8	ACTTGA
 
 # specimen
