@@ -54,15 +54,15 @@ rule group_by_dbr:
         "dedup/{unit}.fake-mapping.bam"
     output:
         "dedup/{unit}.dbr-grouped.bam"
+    log:
+        "logs/group-by-dbr/{unit}.log"
     params:
         strategy=config["dbr"]["grouping-strategy"]
     conda:
         "../envs/fgbio.yaml"
     shell:
-        #"umi_tools group -I {input} --paired --output-bam -S {output} "
-        #"--umi-group-tag MI"
         "fgbio GroupReadsByUmi --input {input} --output {output} "
-        "--strategy {params.strategy} --min-map-q 0 --include-non-pf-reads"
+        "--strategy {params.strategy} --min-map-q 0 --include-non-pf-reads > {log} 2>&1"
 
 
 
