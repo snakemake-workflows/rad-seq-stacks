@@ -61,9 +61,9 @@ rule group_by_umi:
         max_fp_dist=2,
         max_seq_dist=4,
     conda:
-        "../envs/fgbio.yaml"
+        "../envs/rust_bio_tools.yaml"
     shell:
-        "rust-bio-tools group_by_umi {input} -d {params.max_fp_dist} -D {params.max_seq_dist} > {output}"
+        "rbt group-by-umi {input} -d {params.max_fp_dist} -D {params.max_seq_dist} > {output}"
 
 
 
