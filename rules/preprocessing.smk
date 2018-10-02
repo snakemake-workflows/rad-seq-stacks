@@ -49,26 +49,27 @@ rule fake_mapping:
         "../scripts/fake-mapping.py"
 
 
-rule group_by_dbr:
+rule group_by_umi:
     input:
         "dedup/{unit}.fake-mapping.bam"
     output:
-        "dedup/{unit}.dbr-grouped.bam"
+        "dedup/{unit}.umi-grouped.bam"
     log:
-        "logs/group-by-dbr/{unit}.log"
+        "logs/group-by-umi/{unit}.log"
     params:
-        strategy=config["dbr"]["grouping-strategy"]
+        umi_length=config["dbr"]["len"],
+        max_fp_dist=2,
+        max_seq_dist=4,
     conda:
         "../envs/fgbio.yaml"
     shell:
-        "fgbio GroupReadsByUmi --input {input} --output {output} "
-        "--strategy {params.strategy} --min-map-q 0 --include-non-pf-reads > {log} 2>&1"
+        "rust-bio-tools group_by_umi {input} -d {params.max_fp_dist} -D {params.max_seq_dist} > {output}"
 
 
 
 rule generate_consensus_reads:
     input:
-        "dedup/{unit}.dbr-grouped.bam"
+        "dedup/{unit}.umi-grouped.bam"
     output:
         "dedup/{unit}.consensus.bam"
     conda:
