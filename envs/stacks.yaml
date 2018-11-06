@@ -3,3 +3,5 @@ channels:
   - conda-forge
 dependencies:
   - stacks =2.1
+  - pandas
+  - numpy
