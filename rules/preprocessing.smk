@@ -3,7 +3,7 @@ rule barcodes:
     output:
         "barcodes/{unit}.tsv"
     run:
-        
+
         d = individuals.loc[individuals.unit == wildcards.unit, ["p5_barcode", "id"]]
         #d["p7_barcode"] = units.loc[wildcards.unit, "p7_barcode"]
         d[["p5_barcode", "id"]].to_csv(output[0], index=False, header=None, sep="\t")
@@ -22,73 +22,60 @@ rule trim_p7_spacer:
         "seqtk trimfq -b {params.spacer} {input} | gzip > {output}"
 
 
-rule fastq_to_bam:
+ruleorder: trim_p7_spacer > zip_fastq
+ruleorder: calib_consensus > unzip_fastq
+
+
+rule unzip_fastq:
     input:
-        lambda w: units.loc[w.unit, "fq1"],
-        "trimmed-spacer/{unit}.2.fq.gz"
+        "{prefix}.{ext}.gz"
     output:
-        "dedup/{unit}.dbr-annotated.bam"
+        temp("{prefix}.{ext,fastq|fq}")
+    shell:
+        "gzip -d -c {input} > {output}"
+
+
+rule zip_fastq:
+    input:
+        "{prefix}.fastq"
+    output:
+        "{prefix}.fq.gz"
+    shell:
+        "gzip -c {input} > {output}"
+
+
+def calib_fq_input(wildcards):
+    fq1 = units.loc[wildcards.unit, "fq1"]
+    if fq1.endswith(".gz"):
+        fq1 = fq1[:-3]
+    return fq1, "trimmed-spacer/{unit}.2.fq".format(**wildcards)
+
+
+rule calib_cluster:
+    input:
+        calib_fq_input
+    output:
+        "dedup/{unit}.cluster"
     params:
-        dbr=config["dbr"]["len"]
-    conda:
-        "../envs/fgbio.yaml"
+        dbr_len=config["dbr"]["len"],
+        prefix=lambda w, output: output[0][:-7]
     shell:
-        "fgbio FastqToBam --input {input} --output {output} "
-        "--sample {wildcards.unit} --library rad-seq "
-        "--read-structures +T {params.dbr}M+T"
+        "calib -f {input[0]} -r {input[1]} "
+        "-l {params.dbr_len} -o {params.prefix}"
 
 
-rule fake_mapping:
+rule calib_consensus:
     input:
-        "dedup/{unit}.dbr-annotated.bam"
+        fq=calib_fq_input,
+        cluster="dedup/{unit}.cluster"
     output:
-        "dedup/{unit}.fake-mapping.bam"
-    conda:
-        "../envs/pysam.yaml"
-    script:
-        "../scripts/fake-mapping.py"
-
-
-rule group_by_umi:
-    input:
-        "dedup/{unit}.fake-mapping.bam"
-    output:
-        "dedup/{unit}.umi-grouped.bam"
-    log:
-        "logs/group-by-umi/{unit}.log"
+        temp("dedup/{unit}.consensus.1.fastq"),
+        temp("dedup/{unit}.consensus.2.fastq")
     params:
-        umi_length=config["dbr"]["len"],
-        max_fp_dist=2,
-        max_seq_dist=4,
-    conda:
-        "../envs/rust_bio_tools.yaml"
+        prefix=lambda w, output: output[0][:-8]
     shell:
-        "rbt group-by-umi {input} -d {params.max_fp_dist} -D {params.max_seq_dist} > {output}"
-
-
-
-rule generate_consensus_reads:
-    input:
-        "dedup/{unit}.umi-grouped.bam"
-    output:
-        "dedup/{unit}.consensus.bam"
-    conda:
-        "../envs/fgbio.yaml"
-    shell:
-        "fgbio CallMolecularConsensusReads --input {input} --output {output} "
-        "--min-reads 1"
-
-
-rule bam_to_fastq:
-    input:
-        "dedup/{unit}.consensus.bam"
-    output:
-        "dedup/{unit}.consensus.1.fq.gz",
-        "dedup/{unit}.consensus.2.fq.gz"
-    conda:
-        "../envs/samtools.yaml"
-    shell:
-        "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
+        "calib_cons -c {input.cluster} -q {input.fq[0]} {input.fq[1]} "
+        "-o {params.prefix}.1 {params.prefix}.2"
 
 
 rule extract:
