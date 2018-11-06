@@ -23,7 +23,6 @@ rule trim_p7_spacer:
 
 
 ruleorder: trim_p7_spacer > zip_fastq
-ruleorder: calib_consensus > unzip_fastq
 
 
 rule unzip_fastq:
@@ -64,18 +63,53 @@ rule calib_cluster:
         "-l {params.dbr_len} -o {params.prefix}"
 
 
-rule calib_consensus:
+rule group_by_dbr_cluster:
     input:
-        fq=calib_fq_input,
-        cluster="dedup/{unit}.cluster"
+        "dedup/{unit}.cluster"
     output:
-        temp("dedup/{unit}.consensus.1.fastq"),
-        temp("dedup/{unit}.consensus.2.fastq")
-    params:
-        prefix=lambda w, output: output[0][:-8]
+        "dedup/{unit}.dbr-grouped.bam"
+    conda:
+        "../envs/pysam.yaml"
+    script:
+        "../scripts/group-by-dbr-cluster.py"
+
+
+rule generate_consensus_reads:
+    input:
+        "dedup/{unit}.dbr-grouped.bam"
+    output:
+        "dedup/{unit}.consensus.bam"
+    conda:
+        "../envs/fgbio.yaml"
     shell:
-        "calib_cons -c {input.cluster} -q {input.fq[0]} {input.fq[1]} "
-        "-o {params.prefix}.1 {params.prefix}.2"
+        "fgbio CallMolecularConsensusReads --input {input} --output {output} "
+        "--min-reads 1"
+
+
+rule bam_to_fastq:
+    input:
+        "dedup/{unit}.consensus.bam"
+    output:
+        "dedup/{unit}.consensus.1.fq.gz",
+        "dedup/{unit}.consensus.2.fq.gz"
+    conda:
+        "../envs/samtools.yaml"
+    shell:
+        "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
+
+
+# rule calib_consensus:
+#     input:
+#         fq=calib_fq_input,
+#         cluster="dedup/{unit}.cluster"
+#     output:
+#         temp("dedup/{unit}.consensus.1.fastq"),
+#         temp("dedup/{unit}.consensus.2.fastq")
+#     params:
+#         prefix=lambda w, output: output[0][:-8]
+#     shell:
+#         "calib_cons -c {input.cluster} -q {input.fq[0]} {input.fq[1]} "
+#         "-o {params.prefix}.1 {params.prefix}.2"
 
 
 rule extract:
