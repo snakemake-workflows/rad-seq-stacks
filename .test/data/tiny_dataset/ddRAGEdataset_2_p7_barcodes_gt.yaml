@@ -1,0 +1,55 @@
+---
+Individual Information:
+  I1:
+    dbr: NNNNNNMMGGACG
+    p5 bc: ATCACG
+    p5 overhang: TGCAT
+    p5 spacer: ''
+    p7 bc: GTCCGC
+    p7 overhang: TAC
+    p7 spacer: ''
+  I4:
+    dbr: NNNNNNMMGGACG
+    p5 bc: CGATGT
+    p5 overhang: TGCAT
+    p5 spacer: C
+    p7 bc: ACTTGA
+    p7 overhang: TAC
+    p7 spacer: AT
+---
+Locus 0:
+  allele coverages:
+    0: 5
+  allele frequencies:
+    0: 1.0
+  coverage: 5
+  id reads: 0
+  individuals:
+    I1:
+      0:
+        cov: 3
+        mutations: []
+    I4:
+      0:
+        cov: 2
+        mutations: []
+  p5 seq: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  p7 seq: GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
+Locus 1:
+  allele coverages:
+    0: 4
+  allele frequencies:
+    0: 1.0
+  coverage: 0
+  id reads: 0
+  individuals:
+    I1:
+      0:
+        cov: 3
+        mutations: []
+    I4:
+      0:
+        cov: 1
+        mutations: []
+  p5 seq: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+  p7 seq: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
