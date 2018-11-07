@@ -19,7 +19,7 @@ clusters = dict()
 
 # cluster by read sequences
 with subprocess.Popen("starcode --dist {snakemkake.params.seq_dist} --seq-ids "
-                      "-1 {snakemake.input.fq1} -2 <(seqtk trimfq "
+                      "-1 <(gzip -d -c {snakemake.input.fq1}) -2 <(seqtk trimfq "
                       "-b {snakemake.params.dbr_len} {snakemake.input.fq2})",
                       shell=True, stdout=subprocess.PIPE) as seqclust:
     cluster_id = 0
@@ -40,7 +40,9 @@ with subprocess.Popen("starcode --dist {snakemkake.params.seq_dist} --seq-ids "
                 cluster_id += 1
 
 
-# write clustering results to bam
+# Write clustering results to bam.
+# fgbio requires a sorted BAM file for calculating consensus reads.
+# We fake this in the following by letting all reads start at the same position.
 header = {'HD': {
     'VN': '1.0', 'SO': 'unsorted', 'GO': 'query', 'SS': 'template-coordinate'
     }, 'SQ': [{'LN': 10000, 'SN': 'fake'}]}
@@ -55,15 +57,17 @@ def to_bam_rec(cluster_id, dbr, name, seq, qual, read1=True):
     bam_rec.set_tag("MI", str(cluster_id))
     bam_rec.cigar = [(0, len(seq))]
     bam_rec.reference_id = 0
-    bam_rec.reference_start = 1
+    bam_rec.reference_start = 0
     bam_rec.next_reference_id = 0
-    bam_rec.next_reference_start = 1
+    bam_rec.next_reference_start = 0
     bam_rec.is_paired = True
     bam_rec.is_proper_pair = True
     bam_rec.is_read1 = read1
     bam_rec.is_read2 = not read1
     outbam.write(bam_rec)
 
+
+# walk over FASTQ records, lookup cluster id, and write everything to a BAM record.
 for seqid, ((f_name, f_seq, f_qual), (r_name, r_seq, r_qual)) in enumerate(zip(
     dinopy.FastqReader(snakemake.input.fq1),
     dinopy.FastqReader(snakemake.input.fq2))):

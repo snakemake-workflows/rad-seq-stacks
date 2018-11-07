@@ -50,55 +50,20 @@ def cluster_fq_input(wildcards):
     return fq1, "trimmed-spacer/{unit}.2.fq".format(**wildcards)
 
 
-rule cluster_by_dbr:
+rule mark_duplicates:
     input:
-        "trimmed-spacer/{unit}.2.fq.gz"
-    output:
-        "dedup/{unit}.dbr.cluster"
-    conda:
-        "../envs/dedup.yaml"
-    shell:
-        "seqtk trimfq -L {params.dbr_len} {input} | starcode --seq-id > {output}"
-
-
-rule group_read_pairs:
-    input:
-        dbr_cluster="dedup/{unit}.dbr.cluster",
         fq1=lambda w: units.loc[w.unit, "fq1"],
         fq2="trimmed-spacer/{unit}.2.fq.gz"
     output:
-        "dedup/{unit}.dbr-grouped.bam"
+        "dedup/{unit}.markdup.bam"
     conda:
-        "../envs/dedup.yaml"
-    script:
-        "../scripts/group-by-dbr-cluster.py"
-
-
-
-rule calib_cluster:
-    input:
-        calib_fq_input
-    output:
-        "dedup/{unit}.cluster"
-    log:
-        "logs/calib/{unit}.log"
+        "../envs/markdup.yaml"
     params:
         dbr_len=config["dbr"]["len"],
-        prefix=lambda w, output: output[0][:-7]
-    shell:
-        "calib -f {input[0]} -r {input[1]} "
-        "-l {params.dbr_len} -o {params.prefix} > {log}"
-
-
-rule group_by_dbr_cluster:
-    input:
-        "dedup/{unit}.cluster"
-    output:
-        "dedup/{unit}.dbr-grouped.bam"
-    conda:
-        "../envs/pysam.yaml"
+        dbr_dist=config["dbr"]["max_dist"],
+        seq_dist=config["dbr"]["max_seq_dist"]
     script:
-        "../scripts/group-by-dbr-cluster.py"
+        "../scripts/mark-duplicates.py"
 
 
 rule generate_consensus_reads:
@@ -123,20 +88,6 @@ rule bam_to_fastq:
         "../envs/samtools.yaml"
     shell:
         "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
-
-
-# rule calib_consensus:
-#     input:
-#         fq=calib_fq_input,
-#         cluster="dedup/{unit}.cluster"
-#     output:
-#         temp("dedup/{unit}.consensus.1.fastq"),
-#         temp("dedup/{unit}.consensus.2.fastq")
-#     params:
-#         prefix=lambda w, output: output[0][:-8]
-#     shell:
-#         "calib_cons -c {input.cluster} -q {input.fq[0]} {input.fq[1]} "
-#         "-o {params.prefix}.1 {params.prefix}.2"
 
 
 rule extract:
