@@ -44,24 +44,31 @@ rule generate_consensus_reads:
     input:
         "dedup/{unit}.markdup.bam"
     output:
-        "dedup/{unit}.consensus.bam"
+        consensus="dedup/{unit}.consensus.bam",
+        singletons="dedup/{unit}.singletons.bam",
     conda:
         "../envs/fgbio.yaml"
     shell:
-        "fgbio CallMolecularConsensusReads --input {input} --output {output} "
-        "--min-reads 1"
+        "fgbio CallMolecularConsensusReads --input {input} --output {output.consensus} "
+        "--min-reads 2 --rejects {output.singletons}"
 
 
 rule bam_to_fastq:
     input:
-        "dedup/{unit}.consensus.bam"
+        "dedup/{unit}.consensus.bam",
+        "dedup/{unit}.singletons.bam"
     output:
         "dedup/{unit}.consensus.1.fq.gz",
         "dedup/{unit}.consensus.2.fq.gz"
     conda:
         "../envs/samtools.yaml"
     shell:
-        "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
+        """
+        for f in {input}
+        do
+            samtools fastq -1 {output[0]} -2 {output[1]} $f
+        done
+        """
 
 
 rule extract:

@@ -49,6 +49,11 @@ with subprocess.Popen(f"starcode --dist {snakemake.params.seq_dist} --seq-id "
                 cluster_id += 1
                 if (cluster_id - 1) % 1000 == 0:
                     print(f"Processed {cluster_id + 1} clusters.", file=log)
+            if dbrclust.wait() != 0:
+                raise RuntimeError("Error running starcode: " + dbrclust.stderr)
+
+    if seqclust.wait() != 0:
+        raise RuntimeError("Error running starcode: " + seqclust.stderr)
 
 print(f"Total number of clusters: {cluster_id + 1}")
 
