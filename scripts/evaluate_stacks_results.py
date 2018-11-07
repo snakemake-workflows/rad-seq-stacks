@@ -83,35 +83,8 @@ def parse_rage_gt_file(args):
     print("Nr of added snps:", nr_added_snps)
     print("Nr of added inserts:", nr_added_inserts)
     print("Nr of added deletions:", nr_added_deletions)
-    # time.sleep(60)
-    time.sleep(5)
+
     return loc_seqs
-
-
-# def get_stacks_data(args):
-#     """Read in the export.tsv file of a stacks dataset.
-
-#     Returns:
-#         list: of TSVRecord entries. Each of these has the following attributes:
-#         'locus_id', 'seq', 'nr_parents', 'nr_snps', 'snps', 'nr_alleles', 'genotypes'.
-#     """
-#     loc_seqs = []
-#     with open(args.stackstsv, "r") as stacks_file:
-#         for line in csv.reader(stacks_file, delimiter="\t"):
-#             if line and line[0].isdigit():
-#                 try:
-#                     loc_id, _, _, _, seq, nr_par, _, nr_snps, snps, nr_alles, _, _, i1, i2, i3, i4, i5, i6 = line
-#                     record = TSVRecord(loc_id, seq, nr_par, nr_snps, snps, nr_alles, [i1, i2, i3, i4, i5, i6])
-#                     loc_seqs.append(record)
-#                 except:
-#                     print(len(line), line)
-#                     raise
-#             # else:
-#             #     # handle header line, empty lines, individual definition etc.
-#             #     print("Could not parse", line)
-                
-#     # print("Found {} stacks loci".format(len(loc_seqs)))
-#     return loc_seqs
 
 
 
@@ -128,8 +101,8 @@ def get_stacks_data(args):
         print(f"{chromosome}@{one_based_pos} {reference_allele}>{''.join(alternate_alleles)}")
         # fetch assembly from index fasta file
         seq = list(indexed_far[chromosome])[0].sequence
-        # found_base = chr(seq[one_based_pos-1])
-        # print(found_base)
+        found_base = chr(seq[one_based_pos-1])
+        print(found_base)
         print("info:", [(key, value) for key, value in variant_record.info.items()])
         print("samples:")
         for s, vals in variant_record.samples.items():
@@ -147,7 +120,7 @@ def get_stacks_data(args):
     return loc_seqs
 
 
-def compare_assemblies(gt_data, stacks_data, similarity=0.2, verbose=True):
+def find_matching_loci(gt_data, stacks_data, similarity=0.4, verbose=True):
     """Compare clusterings with minhash sketching.
 
     Arguments:
@@ -162,7 +135,7 @@ def compare_assemblies(gt_data, stacks_data, similarity=0.2, verbose=True):
     """
     # sketching parameters
     k = 6
-    s = 40
+    s = 50
     sketch = partial(sk.bottom_sketch, k=k, s=s)
     # initialize assembly
     assembly = {(record.name, record.seq): (record, []) for record in gt_data}
@@ -180,6 +153,9 @@ def compare_assemblies(gt_data, stacks_data, similarity=0.2, verbose=True):
         for sketch_stacks, record in sketched_stacks_data:
             if sk.compare_sketches(s_gt, sketch_stacks) > similarity:
                 assembly[(gt_record.name, gt_record.seq)][1].append(record)
+
+
+    # TODO filter out stacks loci without variants, since the stacks output only reports loci with variants
     return assembly
 
 
@@ -202,7 +178,6 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
                 for record in stacks_loci:
                     print("{:>6}".format(record.locus_id), record.seq, file=outfile)
                 print("\n", file=outfile)
-
 
     # identify length profile of the mapping
     # i.e. how many Stacks loci were assigned to each RAGE locus
@@ -249,7 +224,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
 
     # create a secondary assembly with a lower similarity threshold.
     secondary_sim = 0.2
-    secondary_assembly = compare_assemblies(gt_data, loci_to_postprocess, similarity=secondary_sim, verbose=False)
+    secondary_assembly = find_matching_loci(gt_data, loci_to_postprocess, similarity=secondary_sim, verbose=False)
     kind_of_similar = 0
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in secondary_assembly.items():
         if stacks_loci:
@@ -450,7 +425,7 @@ def main(args):
     print(f"Loading stacks data", file=sys.stderr)
     stacks_data = get_stacks_data(args)
     print("Analyzing:", file=sys.stderr)
-    assembly = compare_assemblies(gt_data, stacks_data)
+    assembly = find_matching_loci(gt_data, stacks_data)
     print("\n\nLocus Analysis:\n", file=sys.stderr)
     evaluate_assembly(assembly, gt_data, stacks_data, args)
     print("\n\nSNPs Analysis:\n", file=sys.stderr)
