@@ -40,3 +40,6 @@ params:
   gstacks: ""
   process_radtags: "--inline_null -c -q -r --barcode_dist_1 3 -D"
   cutadapt: "-q 20"
+  kraken:
+    # refer to kraken DB, see https://ccb.jhu.edu/software/kraken/
+    db: kraken/kraken.db

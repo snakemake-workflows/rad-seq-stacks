@@ -13,9 +13,13 @@ units = pd.read_table("units.tsv", dtype=str).set_index("id", drop=False)
 rule all:
     input:
         expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
-               p=config["params"]["stacks"])
+               p=config["params"]["stacks"]),
+        expand(["plots/{individual}.classification.svg",
+                "plots/{individual}.kmer-mapping.svg"],
+               individual=individuals.index)
 
 
 include: "rules/common.smk"
 include: "rules/preprocessing.smk"
 include: "rules/stacks.smk"
+include: "rules/kraken.smk"
