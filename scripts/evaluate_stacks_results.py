@@ -130,18 +130,21 @@ def get_stacks_data(args):
         seq = list(indexed_far[chromosome])[0].sequence
         # found_base = chr(seq[one_based_pos-1])
         # print(found_base)
-        individuals = [None]
-        record = TSVRecord(chromosome, seq, None, len(alternate_alleles), f"{one_based_pos},{reference_allele}>{''.join(alternate_alleles)}", len(variant_record.alleles), individuals)
-        loc_seqs.append(record)
         print("info:", [(key, value) for key, value in variant_record.info.items()])
         print("samples:")
         for s, vals in variant_record.samples.items():
             print(s, [(key, value) for key, value in vals.items()])
+        
+        individuals = [None] # TODO this needs to be replaced with info from the samples
+        record = TSVRecord(chromosome, seq, None, len(alternate_alleles), f"{one_based_pos},{reference_allele}>{''.join(alternate_alleles)}", len(variant_record.alleles), individuals)
+        loc_seqs.append(record)
+
         # print(record)
         print()
         
     print("Found {} stacks loci with SNPs".format(len(loc_seqs)))
 
+    return loc_seqs
 
 
 def compare_assemblies(gt_data, stacks_data, similarity=0.2, verbose=True):
@@ -159,7 +162,7 @@ def compare_assemblies(gt_data, stacks_data, similarity=0.2, verbose=True):
     """
     # sketching parameters
     k = 6
-    s = 400
+    s = 40
     sketch = partial(sk.bottom_sketch, k=k, s=s)
     # initialize assembly
     assembly = {(record.name, record.seq): (record, []) for record in gt_data}
@@ -442,16 +445,16 @@ def evaluate_snps(assembly, gt_data, stacks_data, args):
 
 
 def main(args):
-    # print(f"Loading gt data", file=sys.stderr)
-    # gt_data = parse_rage_gt_file(args)
+    print(f"Loading gt data", file=sys.stderr)
+    gt_data = parse_rage_gt_file(args)
     print(f"Loading stacks data", file=sys.stderr)
     stacks_data = get_stacks_data(args)
-    # print("Analyzing:", file=sys.stderr)
-    # assembly = compare_assemblies(gt_data, stacks_data)
-    # print("\n\nLocus Analysis:\n", file=sys.stderr)
-    # evaluate_assembly(assembly, gt_data, stacks_data, args)
-    # print("\n\nSNPs Analysis:\n", file=sys.stderr)
-    # evaluate_snps(assembly, gt_data, stacks_data, args)
+    print("Analyzing:", file=sys.stderr)
+    assembly = compare_assemblies(gt_data, stacks_data)
+    print("\n\nLocus Analysis:\n", file=sys.stderr)
+    evaluate_assembly(assembly, gt_data, stacks_data, args)
+    print("\n\nSNPs Analysis:\n", file=sys.stderr)
+    evaluate_snps(assembly, gt_data, stacks_data, args)
 
 
 

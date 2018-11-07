@@ -30,8 +30,9 @@ def bottom_sketch(seq, k, s, hf=mmhash):
     Returns:
         SortedList: the s smallest hash values 
     """
-
+    # print("kjfdsjfdsl", seq)
     kmers = dp.qgrams(seq, k)
+    # print(list(dp.qgrams(seq, k)))
     # initialize the minimal hash value list with the first s values
     first_s_kmers = [kmers.__next__() for _ in range(s)]
     mins = SortedList([hf(kmer) for kmer in first_s_kmers])
