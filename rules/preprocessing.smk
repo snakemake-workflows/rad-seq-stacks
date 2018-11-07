@@ -28,6 +28,8 @@ rule mark_duplicates:
         fq2="trimmed-spacer/{unit}.2.fq.gz"
     output:
         "dedup/{unit}.markdup.bam"
+    log:
+        "logs/mark-duplicates/{unit}.log"
     conda:
         "../envs/markdup.yaml"
     params:
@@ -95,7 +97,7 @@ rule trim:
         qc="trimmed/{individual}.qc.txt"
     params:
         config["params"]["cutadapt"] + (
-            "-a {}".format(config["adapter"]) if config["adapter"] else "")
+            "-a {}".format(config["adapter"]) if config.get("adapter") else "")
     wrapper:
         "0.27.1/bio/cutadapt/pe"
 

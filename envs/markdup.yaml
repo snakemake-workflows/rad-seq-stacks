@@ -4,3 +4,5 @@ channels:
 dependencies:
   - bioconda::starcode =1.1
   - bioconda::pysam =0.15
+  - bioconda::dinopy =2.0
+  - numpy =1.15

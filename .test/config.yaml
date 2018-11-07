@@ -11,10 +11,9 @@ dbr:
   max_dist: 2
   # maximum hamming distance of read sequence to be considered a duplicate
   max_seq_dist: 2
-  # see here for possible grouping strategies:
-  # http://fulcrumgenomics.github.io/fgbio/tools/latest/GroupReadsByUmi.html
-  grouping-strategy: adjacency
 
+# Illumina sequencing adapter that shall be trimmed away.
+# Leave empty if no trimming shall be performed.
 adapter: ""
 
 params:
