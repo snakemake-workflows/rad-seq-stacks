@@ -22,63 +22,27 @@ rule trim_p7_spacer:
         "seqtk trimfq -b {params.spacer} {input} | gzip > {output}"
 
 
-ruleorder: trim_p7_spacer > zip_fastq
-
-
-rule unzip_fastq:
+rule mark_duplicates:
     input:
-        "{prefix}.{ext}.gz"
+        fq1=lambda w: units.loc[w.unit, "fq1"],
+        fq2="trimmed-spacer/{unit}.2.fq.gz"
     output:
-        temp("{prefix}.{ext,fastq|fq}")
-    shell:
-        "gzip -d -c {input} > {output}"
-
-
-rule zip_fastq:
-    input:
-        "{prefix}.fastq"
-    output:
-        "{prefix}.fq.gz"
-    shell:
-        "gzip -c {input} > {output}"
-
-
-def calib_fq_input(wildcards):
-    fq1 = units.loc[wildcards.unit, "fq1"]
-    if fq1.endswith(".gz"):
-        fq1 = fq1[:-3]
-    return fq1, "trimmed-spacer/{unit}.2.fq".format(**wildcards)
-
-
-rule calib_cluster:
-    input:
-        calib_fq_input
-    output:
-        "dedup/{unit}.cluster"
+        "dedup/{unit}.markdup.bam"
     log:
-        "logs/calib/{unit}.log"
+        "logs/mark-duplicates/{unit}.log"
+    conda:
+        "../envs/markdup.yaml"
     params:
         dbr_len=config["dbr"]["len"],
-        prefix=lambda w, output: output[0][:-7]
-    shell:
-        "calib -f {input[0]} -r {input[1]} "
-        "-l {params.dbr_len} -o {params.prefix} > {log}"
-
-
-rule group_by_dbr_cluster:
-    input:
-        "dedup/{unit}.cluster"
-    output:
-        "dedup/{unit}.dbr-grouped.bam"
-    conda:
-        "../envs/pysam.yaml"
+        dbr_dist=config["dbr"]["max_dist"],
+        seq_dist=config["dbr"]["max_seq_dist"]
     script:
-        "../scripts/group-by-dbr-cluster.py"
+        "../scripts/mark-duplicates.py"
 
 
 rule generate_consensus_reads:
     input:
-        "dedup/{unit}.dbr-grouped.bam"
+        "dedup/{unit}.markdup.bam"
     output:
         "dedup/{unit}.consensus.bam"
     conda:
@@ -98,20 +62,6 @@ rule bam_to_fastq:
         "../envs/samtools.yaml"
     shell:
         "samtools fastq -1 {output[0]} -2 {output[1]} {input}"
-
-
-# rule calib_consensus:
-#     input:
-#         fq=calib_fq_input,
-#         cluster="dedup/{unit}.cluster"
-#     output:
-#         temp("dedup/{unit}.consensus.1.fastq"),
-#         temp("dedup/{unit}.consensus.2.fastq")
-#     params:
-#         prefix=lambda w, output: output[0][:-8]
-#     shell:
-#         "calib_cons -c {input.cluster} -q {input.fq[0]} {input.fq[1]} "
-#         "-o {params.prefix}.1 {params.prefix}.2"
 
 
 rule extract:
@@ -147,7 +97,7 @@ rule trim:
         qc="trimmed/{individual}.qc.txt"
     params:
         config["params"]["cutadapt"] + (
-            "-a {}".format(config["adapter"]) if config["adapter"] else "")
+            "-a {}".format(config["adapter"]) if config.get("adapter") else "")
     wrapper:
         "0.27.1/bio/cutadapt/pe"
 
