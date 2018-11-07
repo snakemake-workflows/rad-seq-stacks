@@ -22,34 +22,6 @@ rule trim_p7_spacer:
         "seqtk trimfq -b {params.spacer} {input} | gzip > {output}"
 
 
-ruleorder: trim_p7_spacer > zip_fastq
-
-
-rule unzip_fastq:
-    input:
-        "{prefix}.{ext}.gz"
-    output:
-        temp("{prefix}.{ext,fastq|fq}")
-    shell:
-        "gzip -d -c {input} > {output}"
-
-
-rule zip_fastq:
-    input:
-        "{prefix}.fastq"
-    output:
-        "{prefix}.fq.gz"
-    shell:
-        "gzip -c {input} > {output}"
-
-
-def cluster_fq_input(wildcards):
-    fq1 = units.loc[wildcards.unit, "fq1"]
-    if fq1.endswith(".gz"):
-        fq1 = fq1[:-3]
-    return fq1, "trimmed-spacer/{unit}.2.fq".format(**wildcards)
-
-
 rule mark_duplicates:
     input:
         fq1=lambda w: units.loc[w.unit, "fq1"],
