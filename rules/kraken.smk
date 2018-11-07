@@ -1,20 +1,20 @@
 rule kraken:
     input:
-        fq1="trimmed-adapter/{individual}.1.fq.gz",
-        fq2="trimmed-adapter/{individual}.2.fq.gz",
+        reads=lambda w: units.loc[w.unit, ["fq1", "fq2"]],
         db=config["params"]["kraken"]["db"]
     output:
-        "kraken/{individual}.tsv"
+        "kraken/{unit}.tsv"
     conda:
         "../envs/kraken.yaml"
     log:
-        "logs/kraken/{individual}.log"
+        "logs/kraken/{unit}.log"
     threads: 64
     shell:
         """
-        if [ -s {input.fq1} ]
+        if [ -s {input.reads} ]
         then
-            kraken --threads {threads} --db {input.db} {input.fq1} {input.fq2} > {output} 2> {log}
+            kraken --fastq-input --paired --threads {threads} --db {input.db} \
+            {input.reads} > {output} 2> {log}
         else
             touch {output}
         fi
@@ -23,23 +23,24 @@ rule kraken:
 
 rule kraken_report:
     input:
-        tsv="kraken/{individual}.tsv",
+        tsv="kraken/{unit}.tsv",
         db=config["params"]["kraken"]["db"]
     output:
-        report("tables/{individual}.classification.tsv", caption="../report/kraken.rst", category="classification")
+        report("tables/{unit}.classification.tsv",
+               caption="../report/kraken.rst", category="classification")
     conda:
         "../envs/kraken.yaml"
     log:
-        "logs/kraken-report/{individual}.log"
+        "logs/kraken-report/{unit}.log"
     shell:
         "kraken-report --db {input.db} {input.tsv} > {output} 2> {log}"
 
 
 rule calc_tree_colormap:
     input:
-        "tables/{individual}.classification.tsv"
+        "tables/{unit}.classification.tsv"
     output:
-        "kraken/{individual}.colormap.pickle"
+        "kraken/{unit}.colormap.pickle"
     conda:
         "../envs/eval.yaml"
     script:
@@ -48,10 +49,10 @@ rule calc_tree_colormap:
 
 rule extract_classification_tree:
     input:
-        classification="tables/{individual}.classification.tsv",
-        colormap="kraken/{individual}.colormap.pickle"
+        classification="tables/{unit}.classification.tsv",
+        colormap="kraken/{unit}.colormap.pickle"
     output:
-        "kraken/{individual}.classification.dot"
+        "kraken/{unit}.classification.dot"
     conda:
         "../envs/eval.yaml"
     script:
@@ -60,10 +61,11 @@ rule extract_classification_tree:
 
 rule plot_kmer_mapping:
     input:
-        mapping="kraken/{individual}.tsv",
-        colormap="kraken/{individual}.colormap.pickle"
+        mapping="kraken/{unit}.tsv",
+        colormap="kraken/{unit}.colormap.pickle"
     output:
-        report("plots/{individual}.kmer-mapping.svg", caption="../report/kmer-mapping.rst", category="K-mer mapping")
+        report("plots/{unit}.kmer-mapping.svg",
+               caption="../report/kmer-mapping.rst", category="K-mer mapping")
     conda:
         "../envs/eval.yaml"
     script:
@@ -72,9 +74,11 @@ rule plot_kmer_mapping:
 
 rule plot_classification_tree:
     input:
-        "kraken/{individual}.classification.dot"
+        "kraken/{unit}.classification.dot"
     output:
-        report("plots/{individual}.classification.svg", caption="../report/classification-tree.rst", category="classification")
+        report("plots/{unit}.classification.svg",
+               caption="../report/classification-tree.rst",
+               category="classification")
     conda:
         "../envs/eval.yaml"
     shell:

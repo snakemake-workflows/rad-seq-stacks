@@ -14,9 +14,9 @@ rule all:
     input:
         expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
                p=config["params"]["stacks"]),
-        expand(["plots/{individual}.classification.svg",
-                "plots/{individual}.kmer-mapping.svg"],
-               individual=individuals.index)
+        expand(["plots/{unit}.classification.svg",
+                "plots/{unit}.kmer-mapping.svg"],
+               unit=units.id)
 
 
 include: "rules/common.smk"
