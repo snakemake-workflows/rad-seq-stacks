@@ -67,9 +67,14 @@ header = {'HD': {
 outbam = pysam.AlignmentFile(snakemake.output[0], "wb", header=header)
 
 def to_bam_rec(cluster_id, dbr, fastq_rec, read1=True):
+    seq = fastq_rec.sequence
+    if read2:
+        # remove DBR if this is the second read
+        seq = seq[len(dbr):]
+
     bam_rec = pysam.AlignedSegment(header=outbam.header)
     bam_rec.query_name = fastq_rec.name
-    bam_rec.query_sequence = fastq_rec.sequence
+    bam_rec.query_sequence = seq
     bam_rec.query_qualities = fastq_rec.quality
     bam_rec.set_tag("RX", dbr)
     bam_rec.set_tag("MI", str(cluster_id))
