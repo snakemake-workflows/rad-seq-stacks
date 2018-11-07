@@ -55,12 +55,14 @@ rule calib_cluster:
         calib_fq_input
     output:
         "dedup/{unit}.cluster"
+    log:
+        "logs/calib/{unit}.log"
     params:
         dbr_len=config["dbr"]["len"],
         prefix=lambda w, output: output[0][:-7]
     shell:
         "calib -f {input[0]} -r {input[1]} "
-        "-l {params.dbr_len} -o {params.prefix}"
+        "-l {params.dbr_len} -o {params.prefix} > {log}"
 
 
 rule group_by_dbr_cluster:

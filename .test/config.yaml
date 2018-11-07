@@ -7,6 +7,7 @@ restriction-enzyme:
 
 dbr:
   len: 13
+  max_dist: 2
   # see here for possible grouping strategies:
   # http://fulcrumgenomics.github.io/fgbio/tools/latest/GroupReadsByUmi.html
   grouping-strategy: adjacency
