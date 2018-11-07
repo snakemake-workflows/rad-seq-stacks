@@ -68,7 +68,7 @@ rule mark_duplicates:
 
 rule generate_consensus_reads:
     input:
-        "dedup/{unit}.dbr-grouped.bam"
+        "dedup/{unit}.markdup.bam"
     output:
         "dedup/{unit}.consensus.bam"
     conda:
