@@ -2,8 +2,19 @@ individuals: individuals.tsv
 units: units.tsv
 
 restriction-enzyme:
-  p5: NsiI
-  p7: Csp6I
+  p5: nsiI
+  p7: csp6I
+
+dbr:
+  len: 13
+  # maximum hamming distance of DBR to be considered a duplicate
+  max_dist: 2
+  # maximum hamming distance of read sequence to be considered a duplicate
+  max_seq_dist: 2
+
+# Illumina sequencing adapter that shall be trimmed away.
+# Leave empty if no trimming shall be performed.
+adapter: ""
 
 params:
   stacks:
@@ -27,5 +38,5 @@ params:
       min_reads: 3
   # command line parameters for gstacks, except -I, -O, -B
   gstacks: ""
-  process_radtags: "--index_null"
+  process_radtags: "--inline_null -c -q -r --barcode_dist_1 3 -D"
   cutadapt: "-q 20"
