@@ -43,11 +43,36 @@ rule zip_fastq:
         "gzip -c {input} > {output}"
 
 
-def calib_fq_input(wildcards):
+def cluster_fq_input(wildcards):
     fq1 = units.loc[wildcards.unit, "fq1"]
     if fq1.endswith(".gz"):
         fq1 = fq1[:-3]
     return fq1, "trimmed-spacer/{unit}.2.fq".format(**wildcards)
+
+
+rule cluster_by_dbr:
+    input:
+        "trimmed-spacer/{unit}.2.fq.gz"
+    output:
+        "dedup/{unit}.dbr.cluster"
+    conda:
+        "../envs/dedup.yaml"
+    shell:
+        "seqtk trimfq -L {params.dbr_len} {input} | starcode --seq-id > {output}"
+
+
+rule group_read_pairs:
+    input:
+        dbr_cluster="dedup/{unit}.dbr.cluster",
+        fq1=lambda w: units.loc[w.unit, "fq1"],
+        fq2="trimmed-spacer/{unit}.2.fq.gz"
+    output:
+        "dedup/{unit}.dbr-grouped.bam"
+    conda:
+        "../envs/dedup.yaml"
+    script:
+        "../scripts/group-by-dbr-cluster.py"
+
 
 
 rule calib_cluster:
