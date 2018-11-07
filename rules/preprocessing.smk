@@ -49,7 +49,8 @@ rule generate_consensus_reads:
     conda:
         "../envs/fgbio.yaml"
     shell:
-        "fgbio CallMolecularConsensusReads --input {input} --output {output.consensus} "
+        "fgbio CallMolecularConsensusReads --min-input-base-quality 0 "
+        "--input {input} --output {output.consensus} "
         "--min-reads 2 --rejects {output.singletons}"
 
 

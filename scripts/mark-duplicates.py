@@ -68,21 +68,23 @@ outbam = pysam.AlignmentFile(snakemake.output[0], "wb", header=header)
 
 def to_bam_rec(cluster_id, dbr, fastq_rec, read1=True):
     seq = fastq_rec.sequence
-    if read2:
+    qual = fastq_rec.quality
+    if not read1:
         # remove DBR if this is the second read
         seq = seq[len(dbr):]
+        qual = qual[len(dbr):]
 
     bam_rec = pysam.AlignedSegment(header=outbam.header)
     bam_rec.query_name = fastq_rec.name
     bam_rec.query_sequence = seq
-    bam_rec.query_qualities = fastq_rec.quality
+    bam_rec.query_qualities = qual
     bam_rec.set_tag("RX", dbr)
     bam_rec.set_tag("MI", str(cluster_id))
-    bam_rec.cigar = [(0, len(fastq_rec.sequence))]
+    bam_rec.cigar = [(0, len(seq))]
     bam_rec.reference_id = 0
-    bam_rec.reference_start = 0
+    bam_rec.reference_start = 1
     bam_rec.next_reference_id = 0
-    bam_rec.next_reference_start = 0
+    bam_rec.next_reference_start = len(seq) + 50
     bam_rec.is_paired = True
     bam_rec.is_proper_pair = True
     bam_rec.is_read1 = read1
