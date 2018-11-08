@@ -50,7 +50,7 @@ rule sstacks:
         cstacks=rules.cstacks.output[0]
     output:
         expand("stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{individual}.matches.tsv.gz",
-               individual=individuals.id)
+               individual=individuals.id),
     params:
         outdir=get_outdir,
         individuals=fmt_ustacks_input,
@@ -67,7 +67,7 @@ rule link_ustacks:
     input:
         "ustacks/M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz"
     output:
-        "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz"
+        "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz",
     shell:
         "ln -s -r {input} {output}"
 
@@ -97,7 +97,8 @@ rule gstacks:
                     individual=individuals.id),
         popmap="population-map.tsv"
     output:
-        "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls"
+        "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls",
+        "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.gz"
     params:
         outdir=get_outdir,
         bam_dir=lambda w, input: os.path.dirname(input.bams[0]),
