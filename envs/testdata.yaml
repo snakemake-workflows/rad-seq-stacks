@@ -2,4 +2,10 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - ddrage=1.5.2
+  - python >=3.6
+  - ddrage =1.5.2
+  - pysam
+  - biopython
+  - sortedcontainers
+  - pip:
+    - mmh3
