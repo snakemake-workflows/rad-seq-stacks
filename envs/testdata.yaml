@@ -1,0 +1,5 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - ddrage=1.5.2
