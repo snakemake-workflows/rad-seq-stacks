@@ -9,6 +9,7 @@ import sys
 
 import dinopy as dp
 import pysam
+from Bio import pairwise2
 from collections import Counter, namedtuple
 from functools import partial
 
@@ -16,7 +17,7 @@ import sketching as sk
 
 
 TSVRecord = namedtuple("TSVRecord", ["locus_id", "seq", "nr_parents", "nr_snps", "snps", "nr_alleles", "genotypes"])
-GTRecord = namedtuple("GTRecord", ["name", "seq", "mutations", "id_reads", "dropout"])
+GTRecord = namedtuple("GTRecord", ["name", "seq_p5", "seq_p7", "mutations", "id_reads", "dropout"])
 
 
 def parse_rage_gt_file(args):
@@ -41,7 +42,7 @@ def parse_rage_gt_file(args):
     nr_added_deletions = 0
 
     loc_seqs = []
-    for name, locus in loci.items():
+    for name, locus in [(n,l) for (n,l) in loci.items() if len(l["allele coverages"]) > 1]: # filter out all loci with only one allele
         dropout = []
         # this is the format in which stacks saves the consensus seqeunce in the tsv format
         seq = locus["p5 seq"] + dp.reverse_complement(locus["p7 seq"])
@@ -71,7 +72,8 @@ def parse_rage_gt_file(args):
 
         # compile and append a record for this locus
         id_reads = locus["id reads"]
-        gt_record = GTRecord(name, seq, mutations, id_reads, dropout)
+        # gt_record = GTRecord(name, seq, mutations, id_reads, dropout)
+        gt_record = GTRecord(name, locus["p5 seq"], locus["p7 seq"], mutations, id_reads, dropout)
         nr_added_muts += len(mutations)
         nr_added_snps += len([mut for mut in mutations if ">" in mut])
         nr_added_inserts += len([mut for mut in mutations if "+" in mut])
@@ -97,7 +99,7 @@ def get_stacks_data(args):
         chromosome = variant_record.chrom
         one_based_pos = variant_record.pos
         reference_allele, *alternate_alleles = variant_record.alleles
-        
+
         print(f"{chromosome}@{one_based_pos} {reference_allele}>{''.join(alternate_alleles)}")
         # fetch assembly from index fasta file
         seq = list(indexed_far[chromosome])[0].sequence
@@ -137,22 +139,27 @@ def find_matching_loci(gt_data, stacks_data, similarity=0.4, verbose=True):
     k = 6
     s = 50
     sketch = partial(sk.bottom_sketch, k=k, s=s)
+
+    def join_seqs(seq_p5, seq_p7):
+        return "".join((seq_p5, "NNNNNN", dp.reverse_complement(seq_p7)))
+    
     # initialize assembly
-    assembly = {(record.name, record.seq): (record, []) for record in gt_data}
+    assembly = {(gt_record.name, join_seqs(gt_record.seq_p5, gt_record.seq_p7)): (gt_record, []) for gt_record in gt_data}
     print("Sketching stacks data")
     # pre-sketch the data to avoid quadratic (re-) sketching
-    sketched_stacks_data = [(sketch(record.seq), record) for record in stacks_data]
+    sketched_stacks_data = [(sketch(stacks_record.seq), stacks_record) for stacks_record in stacks_data]
     print("Searching")
     for index, (gt_record) in enumerate(gt_data):
         # print user output
         if verbose and index % 100 == 0:
             print(index)
-        s_gt = sketch(gt_record.seq)
+        joined_gt_seq = join_seqs(gt_record.seq_p5, gt_record.seq_p7)
+        s_gt = sketch(joined_gt_seq)
         # compare all stacks locus sketches against the active RAGE locus sketch
         # Append the loci of all similar sequences to the assembly list.
         for sketch_stacks, record in sketched_stacks_data:
             if sk.compare_sketches(s_gt, sketch_stacks) > similarity:
-                assembly[(gt_record.name, gt_record.seq)][1].append(record)
+                assembly[(gt_record.name, joined_gt_seq)][1].append(record)
 
 
     # TODO filter out stacks loci without variants, since the stacks output only reports loci with variants
@@ -173,11 +180,23 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
     if args.output:
         with open(args.output, "w") as outfile:
             for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
+                print("handling", gt_name)
                 print(gt_name, file=outfile)
                 print("      ", gt_seq, file=outfile)
                 for record in stacks_loci:
                     print("{:>6}".format(record.locus_id), record.seq, file=outfile)
+
+                gt_p5_seq = gt_locus.seq_p5
+                gt_p7_seq = gt_locus.seq_p7
+                for stacks_locus in stacks_loci:
+                    stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
+                    for a in pairwise2.align.globalxx(gt_p5_seq, stacks_p5_seq.decode()):
+                        print(pairwise2.format_alignment(*a))
+                    
+                    
                 print("\n", file=outfile)
+                
+
 
     # identify length profile of the mapping
     # i.e. how many Stacks loci were assigned to each RAGE locus
@@ -428,8 +447,8 @@ def main(args):
     assembly = find_matching_loci(gt_data, stacks_data)
     print("\n\nLocus Analysis:\n", file=sys.stderr)
     evaluate_assembly(assembly, gt_data, stacks_data, args)
-    print("\n\nSNPs Analysis:\n", file=sys.stderr)
-    evaluate_snps(assembly, gt_data, stacks_data, args)
+    # print("\n\nSNPs Analysis:\n", file=sys.stderr)
+    # evaluate_snps(assembly, gt_data, stacks_data, args)
 
 
 
