@@ -7,7 +7,8 @@ import sys
 
 import dinopy as dp
 import pysam
-from Bio import pairwise2
+from Bio.pairwise2 import align, format_alignment
+
 from collections import Counter, namedtuple
 from functools import partial
 
@@ -17,8 +18,32 @@ import sketching as sk
 TSVRecord = namedtuple("TSVRecord", ["locus_id", "seq", "nr_parents",
                                      "nr_snps", "snps", "nr_alleles",
                                      "genotypes"])
+VCFRecord = namedtuple("VCFRecord", ["seq", "data"])
 GTRecord = namedtuple("GTRecord", ["name", "seq_p5", "seq_p7", "mutations",
                                    "id_reads", "dropout"])
+
+
+def normalize_mutation(mut):
+    """Normalize SNPs and call mutation type.
+
+    Consensus and mutation might not be clear so if the
+    simulation was C>T, a call of T>C is considered valid.
+
+    Returns:
+        tuple: Type ("SNP" or "Indel") and (base_from, base_to) for SNPs, None for indels
+    """
+    pos_str, mut_str = mut.split(":")
+    read, pos = pos_str.split("@")
+    if ">" in mut_str:
+        base_from, base_to = mut_str.split(">")
+        snp_pos = int(pos)
+        if read == "p7":
+            base_from = dp.complement(base_from)
+            base_to = dp.complement(base_to)
+            snp_pos = 88 + (81 - snp_pos)  # 81 is the read length + the 7 As used for joining and offset of rev comp reverse reads
+        return ("SNP", (snp_pos, (base_from, base_to)))
+    else:
+        return "Indel", None
 
 
 def parse_rage_gt_file(args):
@@ -50,7 +75,8 @@ def parse_rage_gt_file(args):
                 # is a valid entry with one or two alleles
                 for _, allele in ind.items():
                     if allele["mutations"]:
-                        mutations |= set(allele["mutations"])  # extend set
+                        normalized_mutations = set(normalize_mutation(a) for a in allele["mutations"])
+                        mutations |= normalized_mutations  # extend set
                 dropout.append(False)
             else:
                 dropout.append(True)
@@ -81,37 +107,29 @@ def join_seqs(seq_p5, seq_p7):
 
 
 def get_stacks_data(args):
-    """
+    """Read in stacks VCF file.
     """
     loc_seqs = []
     haplotypes_file = pysam.VariantFile(args.stacks_haplo, 'r')
     indexed_far = dp.FastaReader(args.stacks_fa)
 
+    record = None
+    last_locus = None
+    # merge consecutive lines describing SNPs on the same locus.
     for variant_record in haplotypes_file:
         chromosome = variant_record.chrom
-        one_based_pos = variant_record.pos
-        reference_allele, *alternate_alleles = variant_record.alleles
-
-        # print(f"{chromosome}@{one_based_pos} "
-        #       "{reference_allele}>{''.join(alternate_alleles)}")
-        # fetch assembly from index fasta file
         seq = list(indexed_far[chromosome])[0].sequence
-        # found_base = chr(seq[one_based_pos-1])
-        # print(found_base)
-        # print("info:", [(key, value) for key, value
-        #                 in variant_record.info.items()])
-        # print("samples:")
-        for s, vals in variant_record.samples.items():
-            print(s, [(key, value) for key, value in vals.items()])
 
-        individuals = [None]  # TODO replace this with info from the samples
-        record = TSVRecord(chromosome, seq, None, len(alternate_alleles),
-                           f"{one_based_pos},{reference_allele}>{''.join(alternate_alleles)}",
-                           len(variant_record.alleles), individuals)
-        loc_seqs.append(record)
-        # print()
+        if record is None:
+            record = VCFRecord(seq, [variant_record])
+            last_locus = variant_record.chrom
+        elif variant_record.chrom == last_locus:
+            record.data.append(variant_record)
+        else:
+            loc_seqs.append(record)
+            record = VCFRecord(seq, [variant_record])
+            last_locus = variant_record.chrom
 
-    # print("Found {} stacks loci with SNPs".format(len(loc_seqs)))
     return loc_seqs
 
 
@@ -177,21 +195,46 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
                 print(gt_name, file=outfile)
                 print("      ", gt_seq, file=outfile)
                 for record in stacks_loci:
-                    print("{:>6}".format(record.locus_id), record.seq,
+                    print("{:>6}".format(", ".join([r.chrom for r in record.data])), record.seq,
                           file=outfile)
 
                 gt_p5_seq = gt_locus.seq_p5
                 gt_p7_seq = gt_locus.seq_p7
+                # compute semiglobal alignments of the loci to verify that
+                # they actually match
                 for stacks_locus in stacks_loci:
                     stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
-                    for a in pairwise2.align.globalxx(gt_p5_seq,
-                                                      stacks_p5_seq.decode()):
-                        print(pairwise2.format_alignment(*a))
-                    for a in pairwise2.align.globalxx(gt_p7_seq,
-                                                      stacks_p7_seq.decode()):
-                        print(pairwise2.format_alignment(*a))
+                    p5_alignments = align.globalms(gt_p5_seq,
+                                                   stacks_p5_seq.decode(),
+                                                   1,   # match score
+                                                   0,   # mismatch panalty
+                                                   -5,  # gap open penalty
+                                                   -3,  # gap extend penalty
+                                                   penalize_end_gaps=(False, False),
+                                                   )
+                    p7_alignments = align.globalms(gt_p7_seq,
+                                                   dp.reverse_complement(stacks_p7_seq.decode()),
+                                                   1,   # match score
+                                                   0,   # mismatch panalty
+                                                   -5,  # gap open penalty
+                                                   -3,  # gap extend penalty
+                                                   penalize_end_gaps=(False, False),
+                                                   )
 
+                    p5_aln = p5_alignments[0]
+                    p7_aln = p7_alignments[0]
+                    # print(format_alignment(*p5_aln),
+                    #       format_alignment(*p7_aln))
+                    if p5_aln[4] + p7_aln[4] >= 140:
+                        print("Successful match")
+                        print([locus.alleles for locus in stacks_locus.data])
+                        print(gt_locus.mutations)
+
+                        # TODO: Evaluate if right SNPs were found (mind that Stacks might not call the allele RAGE simulated as root as main allele -> consider x>y == y>x)
+                        # TODO: Evaluate if the right allele frequencies were detected by stacks
                 print("\n", file=outfile)
+
+    # TODO: check how many mutations were not detected
 
     # identify length profile of the mapping
     # i.e. how many Stacks loci were assigned to each RAGE locus
@@ -210,9 +253,9 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
 
     print(f"Total length: {total_len}")
     print(f"Counts of how many stacks loci were assigned to a RAGE locus:"
-          "\n  {sorted(locus_length_counter.items())}")
+          f"\n  {sorted(locus_length_counter.items())}")
     print(f"Of {split_loci} split up loci, {id_loci} had ID reads."
-          "\n  {locus_id_counter}\n")
+          f"\n  {locus_id_counter}\n")
 
     # Check to how many RAGE loci each Stacks loci was assigned.
     # This should always be 1.
@@ -221,25 +264,25 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
     locus_assignment_counter = Counter()
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
         for locus in stacks_loci:
-            locus_assignment_counter[locus.locus_id] += 1
+            locus_assignment_counter[locus.data.chrom] += 1
     print(f"The 5 most assigned stacks locus id. This should always be 1:"
-          "\n  {locus_assignment_counter.most_common(5)}\n")
+          f"\n  {locus_assignment_counter.most_common(5)}\n")
 
     # find stacks loci that are not in the RAGE loci (singletons and HRLs?)
-    occurence_count = Counter({rec.locus_id: 0 for rec in stacks_data})
+    occurence_count = Counter({rec.data.chrom: 0 for rec in stacks_data})
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
         for locus in stacks_loci:
-            occurence_count[locus.locus_id] += 1
+            occurence_count[locus.data.chrom] += 1
 
     # Assemble previously unassigned loci
     loci_to_postprocess = []
     for record in stacks_data:
-        if occurence_count[record.locus_id] == 0:
+        if occurence_count[record.data.chrom] == 0:
             loci_to_postprocess.append(record)
     nr_unassigned = sum([1 if count == 0 else 0 for _, count
                          in occurence_count.items()])
     print(f"Number of stacks loci that were not associated with a rage locus: "
-          "{nr_unassigned}")
+          f"{nr_unassigned}")
 
     # create a secondary assembly with a lower similarity threshold.
     secondary_sim = 0.2
@@ -253,8 +296,8 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
             print(stacks_loci)
             kind_of_similar += 1
     print(f"Of the {nr_unassigned} unassigned loci in the first pass "
-          "(similarity = {args.similarity_threshold}), {kind_of_similar} "
-          "could be assigned with similarity = {secondary_sim}")
+          f"(similarity = {args.similarity_threshold}), {kind_of_similar} "
+          f"could be assigned with similarity = {secondary_sim}")
 
     # Write secondary assembly to file
     if args.output:
