@@ -242,8 +242,6 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
                     #       detected by stacks
             print("\n", file=outfile)
 
-    # TODO: check how many mutations were not detected
-
     # Check to how many RAGE loci each Stacks loci was assigned to.
     # This should always be 1.
     # A value >1 would suggest that a stacks locus is similar to two or
@@ -262,52 +260,30 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
               f"\n  {most_assigned_gt_loci}\n")
 
     # find stacks loci that are not in the RAGE loci (singletons and HRLs?)
-    occurence_count = Counter({rec.data[0].chrom: 0 for rec in stacks_data})
+    # create one entry for each locus assembled by stacks.
+    # then find out in the assembly which ones were never assigned
+    stacks_locus_occurence_count = Counter(
+        {rec.data[0].chrom: 0 for rec in stacks_data})
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
         for locus in stacks_loci:
-            occurence_count[locus.data[0].chrom] += 1
+            # count every gt locus that has an assigned stacks locus
+            stacks_locus_occurence_count[locus.data[0].chrom] += 1
 
-    second_similarity_search = False
-    if second_similarity_search:
-        # Assemble previously unassigned loci
-        loci_to_postprocess = []
-        for record in stacks_data:
-            if occurence_count[record.data[0].chrom] == 0:
-                loci_to_postprocess.append(record)
-        nr_unassigned = sum([1 if count == 0 else 0 for _, count
-                             in occurence_count.items()])
-        print(f"Number of stacks loci that were not associated with a rage locus: "
-              f"{nr_unassigned}")
+    stacks_only_loci = [
+        (l, c) for l, c in stacks_locus_occurence_count.items() if c == 0]
+    if stacks_only_loci:
+        print(f"The following {len(stacks_only_loci)} loci were not simulated "
+              "by rage, but identified by stacks. These might include "
+              "incompletely digested reads, Null Alleles, Singletons, and "
+              "HRLs/ Lumberjack stacks.")
+        print([name for name, _ in stacks_only_loci])
 
-        # create a secondary assembly with a lower similarity threshold.
-        secondary_sim = 0.2
-        secondary_assembly = find_matching_loci(gt_data,
-                                                loci_to_postprocess,
-                                                similarity=secondary_sim,
-                                                verbose=False)
-        kind_of_similar = 0
-        for (gt_name, gt_seq), (gt_locus, stacks_loci)in secondary_assembly.items():
-            if stacks_loci:
-                print(stacks_loci)
-                kind_of_similar += 1
-        print(f"Of the {nr_unassigned} unassigned loci in the first pass "
-              f"(similarity = {args.similarity_threshold}), {kind_of_similar} "
-              f"could be assigned with similarity = {secondary_sim}")
-
-    # Write secondary assembly to file
-    if args.output:
-        with open(args.output, "a") as outfile:
-            print("\n"*20, file=outfile)
-            print("Secondary assembly with similarity", file=outfile)
-            print("\n", file=outfile)
-            for (gt_name, gt_seq), (gt_locus, stacks_loci) in secondary_assembly.items():
-                if stacks_loci:
-                    print(gt_name, file=outfile)
-                    print("      ", gt_seq, file=outfile)
-                    for record in stacks_loci:
-                        print("{:>6}".format(record.locus_id), record.seq,
-                              file=outfile)
-                    print("\n", file=outfile)
+    multiple_hitting_loci = [
+        (l, c) for l, c in stacks_locus_occurence_count.items() if c > 1]
+    if multiple_hitting_loci:
+        print(f"The following {len(multiple_hitting_loci)} hit more than "
+              "one GT locus")
+        print([(name, count) for name, count in multiple_hitting_loci])
 
 
 def main(args):
