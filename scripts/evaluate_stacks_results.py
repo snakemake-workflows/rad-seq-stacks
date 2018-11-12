@@ -110,8 +110,7 @@ def join_seqs(seq_p5, seq_p7):
 
 
 def get_stacks_data(args):
-    """Read in stacks VCF file.
-    """
+    """Read in stacks VCF file."""
     loc_seqs = []
     haplotypes_file = pysam.VariantFile(args.stacks_haplo, 'r')
     indexed_far = dp.FastaReader(args.stacks_fa)
@@ -191,116 +190,109 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
     """
 
     # write mapping to file
-    if args.output:
-        with open(args.output, "w") as outfile:
-            for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-                print("handling", gt_name)
-                print(gt_name, file=outfile)
-                print("      ", gt_seq, file=outfile)
-                for record in stacks_loci:
-                    print("{:>6}".format(", ".join([r.chrom for r in record.data])), record.seq,
-                          file=outfile)
+    with open(args.output, "w") as outfile:
+        for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
+            print("handling", gt_name)
+            print(gt_name, file=outfile)
+            print("      ", gt_seq, file=outfile)
+            for record in stacks_loci:
+                print(f"{', '.join([r.chrom for r in record.data]):>6}",
+                      record.seq,
+                      file=outfile)
 
-                gt_p5_seq = gt_locus.seq_p5
-                gt_p7_seq = gt_locus.seq_p7
-                # compute semiglobal alignments of the loci to verify that
-                # they actually match
-                for stacks_locus in stacks_loci:
-                    stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
-                    p5_alignments = align.globalms(gt_p5_seq,
-                                                   stacks_p5_seq.decode(),
-                                                   1,   # match score
-                                                   0,   # mismatch panalty
-                                                   -5,  # gap open penalty
-                                                   -3,  # gap extend penalty
-                                                   penalize_end_gaps=(False, False),
-                                                   )
-                    p7_alignments = align.globalms(gt_p7_seq,
-                                                   dp.reverse_complement(stacks_p7_seq.decode()),
-                                                   1,   # match score
-                                                   0,   # mismatch panalty
-                                                   -5,  # gap open penalty
-                                                   -3,  # gap extend penalty
-                                                   penalize_end_gaps=(False, False),
-                                                   )
+            gt_p5_seq = gt_locus.seq_p5
+            gt_p7_seq = gt_locus.seq_p7
+            # compute semiglobal alignments of the loci to verify that
+            # they actually match
+            for stacks_locus in stacks_loci:
+                stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
+                all_p5_alns = align.globalms(gt_p5_seq,
+                                             stacks_p5_seq.decode(),
+                                             1,   # match score
+                                             0,   # mismatch panalty
+                                             -5,  # gap open penalty
+                                             -3,  # gap extend penalty
+                                             penalize_end_gaps=(False, False),
+                                             )
+                all_p7_alns = align.globalms(gt_p7_seq,
+                                             dp.reverse_complement(
+                                                 stacks_p7_seq.decode()),
+                                             1,   # match score
+                                             0,   # mismatch panalty
+                                             -5,  # gap open penalty
+                                             -3,  # gap extend penalty
+                                             penalize_end_gaps=(False, False),
+                                             )
+                # pick the first reported alignments
+                # these are either unique or good enough
+                p5_aln = all_p5_alns[0]
+                p7_aln = all_p7_alns[0]
+                # print(format_alignment(*p5_aln),
+                #       format_alignment(*p7_aln))
+                if p5_aln[4] + p7_aln[4] >= 140:
+                    print("Successful match")
+                    print([locus.alleles for locus in stacks_locus.data])
+                    print(gt_locus.mutations)
 
-                    p5_aln = p5_alignments[0]
-                    p7_aln = p7_alignments[0]
-                    # print(format_alignment(*p5_aln),
-                    #       format_alignment(*p7_aln))
-                    if p5_aln[4] + p7_aln[4] >= 140:
-                        print("Successful match")
-                        print([locus.alleles for locus in stacks_locus.data])
-                        print(gt_locus.mutations)
-
-                        # TODO: Evaluate if right SNPs were found (mind that Stacks might not call the allele RAGE simulated as root as main allele -> consider x>y == y>x)
-                        # TODO: Evaluate if the right allele frequencies were detected by stacks
-                print("\n", file=outfile)
+                    # TODO: Evaluate if right SNPs were found
+                    #       (mind that Stacks might not call the allele RAGE
+                    #       simulated as root as main allele
+                    #         -> consider x>y == y>x)
+                    # TODO: Evaluate if the right allele frequencies were
+                    #       detected by stacks
+            print("\n", file=outfile)
 
     # TODO: check how many mutations were not detected
 
-    # identify length profile of the mapping
-    # i.e. how many Stacks loci were assigned to each RAGE locus
-    locus_length_counter, locus_id_counter = Counter(), Counter()
-    split_loci, id_loci = 0, 0
-    total_len = 0
-    for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-        loc_len = len(stacks_loci)
-        total_len += loc_len
-        locus_length_counter[loc_len] += 1
-        if loc_len > 1:
-            split_loci += 1
-            if gt_locus.id_reads > 0:
-                id_loci += 1
-                locus_id_counter[loc_len] += 1
-
-    print(f"Total length: {total_len}")
-    print(f"Counts of how many stacks loci were assigned to a RAGE locus:"
-          f"\n  {sorted(locus_length_counter.items())}")
-    print(f"Of {split_loci} split up loci, {id_loci} had ID reads."
-          f"\n  {locus_id_counter}\n")
-
-    # Check to how many RAGE loci each Stacks loci was assigned.
+    # Check to how many RAGE loci each Stacks loci was assigned to.
     # This should always be 1.
     # A value >1 would suggest that a stacks locus is similar to two or
     # more RAGE loci, which is highly unlikely
     locus_assignment_counter = Counter()
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-        for locus in stacks_loci:
-            locus_assignment_counter[locus.data.chrom] += 1
-    print(f"The 5 most assigned stacks locus id. This should always be 1:"
-          f"\n  {locus_assignment_counter.most_common(5)}\n")
+        for stacks_locus in stacks_loci:
+            # all gt_loci assigned to a stacks locus (identified by
+            # the chrom field in the VCF record) should point to
+            # the same locus, hence they all just need to be counted as one
+            locus_assignment_counter[stacks_locus.data[0].chrom] += 1
+    most_assigned_gt_loci = locus_assignment_counter.most_common(5)
+    stacks_locus_name, assigned_gt_loci = most_assigned_gt_loci[0]
+    if assigned_gt_loci > 1:
+        print(f"The 5 most assigned stacks locus id. This should always be 1:"
+              f"\n  {most_assigned_gt_loci}\n")
 
     # find stacks loci that are not in the RAGE loci (singletons and HRLs?)
-    occurence_count = Counter({rec.data.chrom: 0 for rec in stacks_data})
+    occurence_count = Counter({rec.data[0].chrom: 0 for rec in stacks_data})
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
         for locus in stacks_loci:
-            occurence_count[locus.data.chrom] += 1
+            occurence_count[locus.data[0].chrom] += 1
 
-    # Assemble previously unassigned loci
-    loci_to_postprocess = []
-    for record in stacks_data:
-        if occurence_count[record.data.chrom] == 0:
-            loci_to_postprocess.append(record)
-    nr_unassigned = sum([1 if count == 0 else 0 for _, count
-                         in occurence_count.items()])
-    print(f"Number of stacks loci that were not associated with a rage locus: "
-          f"{nr_unassigned}")
+    second_similarity_search = False
+    if second_similarity_search:
+        # Assemble previously unassigned loci
+        loci_to_postprocess = []
+        for record in stacks_data:
+            if occurence_count[record.data[0].chrom] == 0:
+                loci_to_postprocess.append(record)
+        nr_unassigned = sum([1 if count == 0 else 0 for _, count
+                             in occurence_count.items()])
+        print(f"Number of stacks loci that were not associated with a rage locus: "
+              f"{nr_unassigned}")
 
-    # create a secondary assembly with a lower similarity threshold.
-    secondary_sim = 0.2
-    secondary_assembly = find_matching_loci(gt_data,
-                                            loci_to_postprocess,
-                                            similarity=secondary_sim,
-                                            verbose=False)
-    kind_of_similar = 0
-    for (gt_name, gt_seq), (gt_locus, stacks_loci) in secondary_assembly.items():
-        if stacks_loci:
-            print(stacks_loci)
-            kind_of_similar += 1
-    print(f"Of the {nr_unassigned} unassigned loci in the first pass "
-          f"(similarity = {args.similarity_threshold}), {kind_of_similar} "
-          f"could be assigned with similarity = {secondary_sim}")
+        # create a secondary assembly with a lower similarity threshold.
+        secondary_sim = 0.2
+        secondary_assembly = find_matching_loci(gt_data,
+                                                loci_to_postprocess,
+                                                similarity=secondary_sim,
+                                                verbose=False)
+        kind_of_similar = 0
+        for (gt_name, gt_seq), (gt_locus, stacks_loci)in secondary_assembly.items():
+            if stacks_loci:
+                print(stacks_loci)
+                kind_of_similar += 1
+        print(f"Of the {nr_unassigned} unassigned loci in the first pass "
+              f"(similarity = {args.similarity_threshold}), {kind_of_similar} "
+              f"could be assigned with similarity = {secondary_sim}")
 
     # Write secondary assembly to file
     if args.output:
