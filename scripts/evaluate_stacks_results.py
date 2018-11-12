@@ -8,7 +8,7 @@ import sys
 import dinopy as dp
 import pysam
 from Bio.pairwise2 import align
-# from Bio.pairwise2 import format_alignment
+from Bio.pairwise2 import format_alignment
 
 from collections import Counter, namedtuple
 from functools import partial
@@ -44,7 +44,10 @@ def normalize_mutation(mut):
             base_to = dp.complement(base_to)
             # 81 is the read length, offset to compensate for rev comp p7 reads
             snp_pos = 81 - snp_pos
-        return ("SNP", (snp_pos, (base_from, base_to)))
+            orientation = "p7"
+        else:
+            orientation = "p5"
+        return ("SNP", (orientation, snp_pos, (base_from, base_to)))
     else:
         return "Indel", None
 
@@ -189,10 +192,14 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
         args (argparse.NameSpace): User parameters.
     """
 
+    nr_of_undiscovered_mutations = 0
+    nr_of_discovered_mutations = 0
     # write mapping to file
     with open(args.output, "w") as outfile:
         for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-            print("handling", gt_name)
+            # user output
+            print("Handling gt ", gt_name, ":  ", end="")
+            # file output
             print(gt_name, file=outfile)
             print("      ", gt_seq, file=outfile)
             for record in stacks_loci:
@@ -202,10 +209,18 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
 
             gt_p5_seq = gt_locus.seq_p5
             gt_p7_seq = gt_locus.seq_p7
+
+            if not stacks_loci:
+                print("No matching stack locus found")
+                nr_of_undiscovered_mutations += 1
             # compute semiglobal alignments of the loci to verify that
             # they actually match
             for stacks_locus in stacks_loci:
-                stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
+                try:
+                    stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
+                except ValueError:
+                    stacks_p5_seq = stacks_locus.seq
+                    stacks_p7_seq = stacks_locus.seq
                 all_p5_alns = align.globalms(gt_p5_seq,
                                              stacks_p5_seq.decode(),
                                              1,   # match score
@@ -213,6 +228,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
                                              -5,  # gap open penalty
                                              -3,  # gap extend penalty
                                              penalize_end_gaps=(False, False),
+                                             one_alignment_only=True,
                                              )
                 all_p7_alns = align.globalms(gt_p7_seq,
                                              dp.reverse_complement(
@@ -222,6 +238,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
                                              -5,  # gap open penalty
                                              -3,  # gap extend penalty
                                              penalize_end_gaps=(False, False),
+                                             one_alignment_only=True,
                                              )
                 # pick the first reported alignments
                 # these are either unique or good enough
@@ -229,17 +246,26 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
                 p7_aln = all_p7_alns[0]
                 # print(format_alignment(*p5_aln),
                 #       format_alignment(*p7_aln))
-                if p5_aln[4] + p7_aln[4] >= 140:
-                    print("Successful match")
-                    print([locus.alleles for locus in stacks_locus.data])
+
+                if p5_aln[2] + p7_aln[2] >= 140:
+                    print(f"Successful match: {p5_aln[2] + p7_aln[2]}")
+                    # print(p5_aln)
+                    print([(mutation.alleles, mutation.pos) for mutation in stacks_locus.data])
                     print(gt_locus.mutations)
 
                     # TODO: Evaluate if right SNPs were found
                     #       (mind that Stacks might not call the allele RAGE
                     #       simulated as root as main allele
                     #         -> consider x>y == y>x)
+                    nr_of_discovered_mutations += 1
                     # TODO: Evaluate if the right allele frequencies were
                     #       detected by stacks
+                else:
+                    print(f"MISMATCH with {stacks_locus.data[0].chrom}")
+                    # print(format_alignment(*p5_aln),
+                    #       format_alignment(*p7_aln))
+
+            print("\n")
             print("\n", file=outfile)
 
     # Check to how many RAGE loci each Stacks loci was assigned to.
@@ -261,7 +287,12 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
 
     # find stacks loci that are not in the RAGE loci (singletons and HRLs?)
     # create one entry for each locus assembled by stacks.
-    # then find out in the assembly which ones were never assigned
+    # then find out in the assembly which ones were never assigned to a
+    # rage locus
+
+    # 1. create a dictionary with zero for all stacks locus names
+    # 2. iterate thourgh the gt_locus -> stacks-locus mapping
+    # 3. increment the counter for each stacks locus
     stacks_locus_occurence_count = Counter(
         {rec.data[0].chrom: 0 for rec in stacks_data})
     for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
@@ -278,12 +309,9 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
               "HRLs/ Lumberjack stacks.")
         print([name for name, _ in stacks_only_loci])
 
-    multiple_hitting_loci = [
-        (l, c) for l, c in stacks_locus_occurence_count.items() if c > 1]
-    if multiple_hitting_loci:
-        print(f"The following {len(multiple_hitting_loci)} hit more than "
-              "one GT locus")
-        print([(name, count) for name, count in multiple_hitting_loci])
+    print("")
+    print(f"{nr_of_discovered_mutations} loci with mutations were successfully discovered")
+    print(f"{nr_of_undiscovered_mutations} loci with mutations were not discovered by stacks")
 
 
 def main(args):
