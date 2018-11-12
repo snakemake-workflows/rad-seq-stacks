@@ -31,7 +31,8 @@ def normalize_mutation(mut):
     simulation was C>T, a call of T>C is considered valid.
 
     Returns:
-        tuple: Type ("SNP" or "Indel") and (base_from, base_to) for SNPs, None for indels
+        tuple: Type ("SNP" or "Indel") and (base_from, base_to) for SNPs,
+        None for indels
     """
     pos_str, mut_str = mut.split(":")
     read, pos = pos_str.split("@")
@@ -41,7 +42,8 @@ def normalize_mutation(mut):
         if read == "p7":
             base_from = dp.complement(base_from)
             base_to = dp.complement(base_to)
-            snp_pos = 88 + (81 - snp_pos)  # 81 is the read length + the 7 As used for joining and offset of rev comp reverse reads
+            # 81 is the read length, offset to compensate for rev comp p7 reads
+            snp_pos = 81 - snp_pos
         return ("SNP", (snp_pos, (base_from, base_to)))
     else:
         return "Indel", None
