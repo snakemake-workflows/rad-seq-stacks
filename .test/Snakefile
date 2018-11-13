@@ -47,7 +47,7 @@ rule compare_loci:
     conda:
         "../envs/testdata.yaml"
     shell:
-        "python ../scripts/evaluate_stacks_results.py --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
+        "python scripts/evaluate_stacks_results.py --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
 
 
 include: "../rules/common.smk"
