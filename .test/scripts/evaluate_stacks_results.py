@@ -385,12 +385,25 @@ def get_argparser():
         dest="stacks_fa",
         )
     parser.add_argument(
+        "-g", "-y", "--ground-truth", "--yaml",
+        help="Path the a YAML gt file",
+        default="RAGEdataset_ATCACG_gt.yaml",
+        dest="yaml",
+        )
+    # input
+    parser.add_argument(
+        "-o", "--output",
+        help="If an output file should be written",
+        default=False,
+        )
+    parser.add_argument(
         "-v", "--verbose",
         help="Print supplementary information",
         dest="verbose",
         action="store_true",
         default=False,
         )
+    # analysis parameters
     parser.add_argument(
         "-t", "--similarity-threshold",
         help="The minimal estimated Jaccard similarity for two loci to be"
