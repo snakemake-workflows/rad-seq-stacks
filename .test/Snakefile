@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import zlib
 
-configfile: "../config.yaml"
+configfile: "config.yaml"
 
 individuals = pd.read_table("individuals.tsv", dtype=str).set_index("id", drop=False)
 individuals["hash"] = np.arange(len(individuals)) # individuals.id.str.encode("utf-8").apply(zlib.crc32)
