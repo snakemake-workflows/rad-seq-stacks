@@ -23,7 +23,7 @@ VCFRecord = namedtuple("VCFRecord", ["seq", "data"])
 GTRecord = namedtuple("GTRecord", ["name", "seq_p5", "seq_p7", "mutations",
                                    "id_reads", "dropout"])
 GTStats = namedtuple("GTStats", ["nr_muts", "nr_snps", "nr_inserts",
-                                 "nr_deletions", "nr_snp_loci"])
+                                 "nr_deletions", "nr_loci_with_snps"])
 
 
 def normalize_mutation(mut):
@@ -68,7 +68,7 @@ def parse_rage_gt_file(args):
         except yaml.YAMLError as exc:
             print(exc)
     nr_muts, nr_snps, nr_inserts, nr_deletions = (0, 0, 0, 0)
-    nr_snp_loci = 0
+    nr_loci_with_snps = 0
 
     loc_seqs = []
     # filter out all loci with only one allele, i.e. all unmutated loci
@@ -90,8 +90,8 @@ def parse_rage_gt_file(args):
             else:
                 dropout.append(True)
 
-            if any((mut_type == "SNP" for mut_type, _ in mutations)):
-                loci_with_snps += 1
+        if any((mut_type == "SNP" for mut_type, _ in mutations)):
+            nr_loci_with_snps += 1
 
         # compile and append a record for this locus
         id_reads = locus["id reads"]
@@ -110,7 +110,7 @@ def parse_rage_gt_file(args):
         print("Nr of added inserts:", nr_inserts)
         print("Nr of added deletions:", nr_deletions)
 
-    gt_stats = GTStats(nr_muts, nr_snps, nr_inserts, nr_deletions, nr_snp_loci)
+    gt_stats = GTStats(nr_muts, nr_snps, nr_inserts, nr_deletions, nr_loci_with_snps)
     return loc_seqs, gt_stats
 
 
@@ -320,7 +320,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
     print(f"{nr_of_discovered_mutations} loci with mutations were successfully discovered")
     print(f"{nr_of_undiscovered_mutations} loci with mutations were not discovered by stacks")
     print("SNP discovery ratio")
-    print(f"{nr_of_discovered_mutations}/{gt_stats.loci_with_snps}")
+    print(f"{nr_of_discovered_mutations}/{gt_stats.nr_loci_with_snps}")
 
 
 def main(args):
