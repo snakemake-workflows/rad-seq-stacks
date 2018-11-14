@@ -19,6 +19,8 @@ rule all:
                p=config["params"]["stacks"]),
         expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.txt",
                p=config["params"]["stacks"]),
+        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/checked",
+               p=config["params"]["stacks"]),
 
 
 rule index_stacks_loci:
@@ -48,6 +50,18 @@ rule compare_loci:
         "../envs/testdata.yaml"
     shell:
         "python scripts/evaluate_stacks_results.py --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
+
+
+rule verify_results:
+    input:
+        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
+        expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
+    output:
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/checked"
+    conda:
+        "../envs/testdata.yaml"
+    shell:
+        "python scripts/extract_metrics.py {input.result} {input.expected} && touch {output}"
 
 
 include: "../rules/common.smk"

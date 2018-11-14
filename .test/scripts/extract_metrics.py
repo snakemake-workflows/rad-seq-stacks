@@ -43,17 +43,8 @@ def get_argparser():
         dest="input",
     )
     parser.add_argument(
-        "--ratio-equals",
-        help="Fails, if ratio differs from given parameter",
-        dest="ratio_equals",
-    )
-    parser.add_argument(
-        "--ratio-less",
-        help="Fails, if ratio differs from given parameter",
-    )
-    parser.add_argument(
-        "--ratio-less-eq",
-        help="Fails, if ratio differs from given parameter",
+        help="yaml file with expected values",
+        dest="expected",
     )
     return parser
 
