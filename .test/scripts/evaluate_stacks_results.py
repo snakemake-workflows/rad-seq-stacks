@@ -105,10 +105,10 @@ def parse_rage_gt_file(args):
         loc_seqs.append(gt_record)
 
     if args.verbose:
-        print("Nr of added muts:", nr_muts)
-        print("Nr of added snps:", nr_snps)
-        print("Nr of added inserts:", nr_inserts)
-        print("Nr of added deletions:", nr_deletions)
+        print("Nr of added muts:", nr_muts, file=sys.stderr)
+        print("Nr of added snps:", nr_snps, file=sys.stderr)
+        print("Nr of added inserts:", nr_inserts, file=sys.stderr)
+        print("Nr of added deletions:", nr_deletions, file=sys.stderr)
 
     gt_stats = GTStats(nr_muts, nr_snps, nr_inserts, nr_deletions, nr_loci_with_snps)
     return loc_seqs, gt_stats
@@ -176,7 +176,7 @@ def find_matching_loci(gt_data, stacks_data, similarity, verbose=True):
     for index, (gt_record) in enumerate(gt_data):
         # print user output
         if verbose and index % 100 == 0:
-            print(index)
+            print(index, file=sys.stderr)
         joined_gt_seq = join_seqs(gt_record.seq_p5, gt_record.seq_p7)
         s_gt = sketch(joined_gt_seq)
         # compare all stacks locus sketches against the active RAGE loc. sketch
@@ -205,7 +205,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
     with open(args.output, "w") as outfile:
         for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
             # user output
-            print("Handling gt ", gt_name, ":  ", end="")
+            print("Handling gt ", gt_name, ":  ", sep="", end="", file=sys.stderr)
             # file output
             print(gt_name, file=outfile)
             print("      ", gt_seq, file=outfile)
@@ -218,7 +218,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             gt_p7_seq = gt_locus.seq_p7
 
             if not stacks_loci:
-                print("No matching stack locus found")
+                print("No matching stack locus found", file=outfile)
                 nr_of_undiscovered_mutations += 1
             # compute semiglobal alignments of the loci to verify that
             # they actually match
@@ -255,10 +255,10 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 #       format_alignment(*p7_aln))
 
                 if p5_aln[2] + p7_aln[2] >= 140:
-                    print(f"Successful match: {p5_aln[2] + p7_aln[2]}")
+                    print(f"Successful match: {p5_aln[2] + p7_aln[2]}", file=sys.stderr)
                     # print(p5_aln)
-                    print([(mutation.alleles, mutation.pos) for mutation in stacks_locus.data])
-                    print(gt_locus.mutations)
+                    print([(mutation.alleles, mutation.pos) for mutation in stacks_locus.data], file=sys.stderr)
+                    print(gt_locus.mutations, file=sys.stderr)
 
                     # TODO: Evaluate if right SNPs were found
                     #       (mind that Stacks might not call the allele RAGE
@@ -272,55 +272,57 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                     # print(format_alignment(*p5_aln),
                     #       format_alignment(*p7_aln))
 
-            print("\n")
+            print("\n", file=sys.stderr)
             print("\n", file=outfile)
 
-    # Check to how many RAGE loci each Stacks loci was assigned to.
-    # This should always be 1.
-    # A value >1 would suggest that a stacks locus is similar to two or
-    # more RAGE loci, which is highly unlikely
-    locus_assignment_counter = Counter()
-    for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-        for stacks_locus in stacks_loci:
-            # all gt_loci assigned to a stacks locus (identified by
-            # the chrom field in the VCF record) should point to
-            # the same locus, hence they all just need to be counted as one
-            locus_assignment_counter[stacks_locus.data[0].chrom] += 1
-    most_assigned_gt_loci = locus_assignment_counter.most_common(5)
-    stacks_locus_name, assigned_gt_loci = most_assigned_gt_loci[0]
-    if assigned_gt_loci > 1:
-        print(f"The 5 most assigned stacks locus id. This should always be 1:"
-              f"\n  {most_assigned_gt_loci}\n")
-
-    # find stacks loci that are not in the RAGE loci (singletons and HRLs?)
-    # create one entry for each locus assembled by stacks.
-    # then find out in the assembly which ones were never assigned to a
-    # rage locus
-
-    # 1. create a dictionary with zero for all stacks locus names
-    # 2. iterate thourgh the gt_locus -> stacks-locus mapping
-    # 3. increment the counter for each stacks locus
-    stacks_locus_occurence_count = Counter(
-        {rec.data[0].chrom: 0 for rec in stacks_data})
-    for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-        for locus in stacks_loci:
-            # count every gt locus that has an assigned stacks locus
-            stacks_locus_occurence_count[locus.data[0].chrom] += 1
-
-    stacks_only_loci = [
-        (l, c) for l, c in stacks_locus_occurence_count.items() if c == 0]
-    if stacks_only_loci:
-        print(f"The following {len(stacks_only_loci)} loci were not simulated "
-              "by rage, but identified by stacks. These might include "
-              "incompletely digested reads, Null Alleles, Singletons, and "
-              "HRLs/ Lumberjack stacks.")
-        print([name for name, _ in stacks_only_loci])
-
-    print("")
-    print(f"{nr_of_discovered_mutations} loci with mutations were successfully discovered")
-    print(f"{nr_of_undiscovered_mutations} loci with mutations were not discovered by stacks")
-    print("SNP discovery ratio")
-    print(f"{nr_of_discovered_mutations}/{gt_stats.nr_loci_with_snps}")
+        # Check to how many RAGE loci each Stacks loci was assigned to.
+        # This should always be 1.
+        # A value >1 would suggest that a stacks locus is similar to two or
+        # more RAGE loci, which is highly unlikely
+        locus_assignment_counter = Counter()
+        for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
+            for stacks_locus in stacks_loci:
+                # all gt_loci assigned to a stacks locus (identified by
+                # the chrom field in the VCF record) should point to
+                # the same locus, hence they all just need to be counted as one
+                locus_assignment_counter[stacks_locus.data[0].chrom] += 1
+        most_assigned_gt_loci = locus_assignment_counter.most_common(5)
+        stacks_locus_name, assigned_gt_loci = most_assigned_gt_loci[0]
+        if assigned_gt_loci > 1:
+            print(f"The 5 most assigned stacks locus id. This should always be 1:"
+                  f"\n  {most_assigned_gt_loci}\n", file=sys.stderr)
+    
+        # find stacks loci that are not in the RAGE loci (singletons and HRLs?)
+        # create one entry for each locus assembled by stacks.
+        # then find out in the assembly which ones were never assigned to a
+        # rage locus
+    
+        # 1. create a dictionary with zero for all stacks locus names
+        # 2. iterate thourgh the gt_locus -> stacks-locus mapping
+        # 3. increment the counter for each stacks locus
+        stacks_locus_occurence_count = Counter(
+            {rec.data[0].chrom: 0 for rec in stacks_data})
+        for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
+            for locus in stacks_loci:
+                # count every gt locus that has an assigned stacks locus
+                stacks_locus_occurence_count[locus.data[0].chrom] += 1
+    
+        stacks_only_loci = [
+            (l, c) for l, c in stacks_locus_occurence_count.items() if c == 0]
+        if stacks_only_loci:
+            print(f"The following {len(stacks_only_loci)} loci were not simulated "
+                  "by rage, but identified by stacks. These might include "
+                  "incompletely digested reads, Null Alleles, Singletons, and "
+                  "HRLs/ Lumberjack stacks.", file=sys.stderr)
+            print([name for name, _ in stacks_only_loci], file=sys.stderr)
+    
+        print("", file=outfile)
+        print("Loci with mutations were successfully discovered:", file=outfile)
+        print(f"{nr_of_discovered_mutations}", file=outfile)
+        print("Loci with mutations were not discovered by stacks:", file=outfile)
+        print(f"{nr_of_undiscovered_mutations}", file=outfile)
+        print("SNP discovery ratio", file=outfile)
+        print(f"{nr_of_discovered_mutations}/{gt_stats.nr_loci_with_snps}", file=outfile)
 
 
 def main(args):
