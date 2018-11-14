@@ -21,7 +21,7 @@ TSVRecord = namedtuple("TSVRecord", ["locus_id", "seq", "nr_parents",
                                      "genotypes"])
 VCFRecord = namedtuple("VCFRecord", ["seq", "data"])
 GTRecord = namedtuple("GTRecord", ["name", "seq_p5", "seq_p7", "mutations",
-                                   "id_reads", "dropout"])
+                                   "id_reads", "dropout", "allele_freqencies"])
 GTStats = namedtuple("GTStats", ["nr_muts", "nr_snps", "nr_inserts",
                                  "nr_deletions", "nr_loci_with_snps"])
 
@@ -97,7 +97,7 @@ def parse_rage_gt_file(args):
         id_reads = locus["id reads"]
         # gt_record = GTRecord(name, seq, mutations, id_reads, dropout)
         gt_record = GTRecord(name, locus["p5 seq"], locus["p7 seq"],
-                             mutations, id_reads, dropout)
+                             mutations, id_reads, dropout, locus["allele frequencies"])
         nr_muts += len(mutations)
         nr_snps += len([mut for mut in mutations if ">" in mut])
         nr_inserts += len([mut for mut in mutations if "+" in mut])
@@ -259,6 +259,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                     # print(p5_aln)
                     print([(mutation.alleles, mutation.pos) for mutation in stacks_locus.data], file=sys.stderr)
                     print(gt_locus.mutations, file=sys.stderr)
+                    print(gt_locus.allele_freqencies, file=sys.stderr)
 
                     # TODO: Evaluate if right SNPs were found
                     #       (mind that Stacks might not call the allele RAGE
