@@ -218,7 +218,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             gt_p7_seq = gt_locus.seq_p7
 
             if not stacks_loci:
-                print("No matching stack locus found", file=outfile)
+                print("      ", "No matching stack locus found", file=outfile)
                 nr_of_undiscovered_mutations += 1
             # compute semiglobal alignments of the loci to verify that
             # they actually match
