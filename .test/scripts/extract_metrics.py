@@ -1,10 +1,12 @@
 import argparse
 import sys
+import yaml
 
 
 def main(args):
     """Take all set parameters from argparse and check if they hold.
     """
+    # read in metric parsed from the output of evaluate_stacks_results.py
     with open(args.input, "r") as infile:
         # get last six lines
         last_lines = [infile.__next__() for _ in range(8)]
@@ -13,22 +15,38 @@ def main(args):
             last_lines.append(line)
     _, discovered, _, of_total, _, undiscovered, _, ratio = last_lines
 
-    discovered = int(discovered.strip())
-    of_total = int(of_total.strip())
-    undiscovered = int(undiscovered.strip())
-    ratio = float(ratio.strip())
-    print(f"{discovered}/{of_total} missing {undiscovered} => {ratio}")
+    # aggregate all results in a dictionary, make sure the keys are equal to
+    # the keywords in the expected.yaml file
+    metrics = {
+        "discovered": int(discovered.strip()),
+        "of_total": int(of_total.strip()),
+        "undiscovered": int(undiscovered.strip()),
+        "ratio": float(ratio.strip()),
+        }
+    print(f"{metrics['discovered']}/{metrics['of_total']} missing "
+          f"{metrics['undiscovered']} => {metrics['ratio']}",
+          file=sys.stderr,
+          )
 
+    # load dictionary of expected values
+    expected_values = yaml.load(open(args.expected, "r"))
+
+    # prepare comparison_functions
+    checks = {
+        "equals": lambda x, y: x == y,
+        "less": lambda x, y: x < y,
+        "less_eq": lambda x, y: x <= y,
+        "greater": lambda x, y: x > y,
+        "greater_eq": lambda x, y: x >= y,
+    }
     error_message = []
-
-    if args.ratio_equals and not (float(args.ratio_equals) == ratio):
-        error_message.append(f"Ratio mismatch: {args.ratio_equals} != {ratio}")
-
-    if args.ratio_less and not (float(args.ratio_less) > ratio):
-        error_message.append(f"Ratio mismatch: {args.ratio_less} >= {ratio}")
-
-    if args.ratio_less_eq and not (float(args.ratio_less_eq) >= ratio):
-        error_message.append(f"Ratio mismatch: {args.ratio_less_eq} > {ratio}")
+    for metric, conditions in expected_values.items():
+        value = metrics[metric]  # the value parsed from the results file
+        for condition, target_value in conditions.items():
+            # get the function to compare the values
+            if not checks[condition](value, target_value):
+                error_message.append(f"Error: '{value} {condition} "
+                                     f"{target_value}' does not hold.")
 
     if error_message:
         print("\n".join(error_message), file=sys.stderr)
