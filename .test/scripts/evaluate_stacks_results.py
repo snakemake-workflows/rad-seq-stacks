@@ -318,12 +318,14 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             print([name for name, _ in stacks_only_loci], file=sys.stderr)
     
         print("", file=outfile)
-        print("Loci with mutations were successfully discovered:", file=outfile)
+        print("Loci with mutations that were successfully discovered:", file=outfile)
         print(f"{nr_of_discovered_mutations}", file=outfile)
+        print("Total simulated SNP loci:", file=outfile)
+        print(f"{gt_stats.nr_loci_with_snps}", file=outfile)
         print("Loci with mutations were not discovered by stacks:", file=outfile)
         print(f"{nr_of_undiscovered_mutations}", file=outfile)
         print("SNP discovery ratio", file=outfile)
-        print(f"{nr_of_discovered_mutations}/{gt_stats.nr_loci_with_snps}", file=outfile)
+        print(f"{nr_of_discovered_mutations / gt_stats.nr_loci_with_snps}", file=outfile)
 
 
 def main(args):
