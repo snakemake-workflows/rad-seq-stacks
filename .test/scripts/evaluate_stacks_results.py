@@ -22,6 +22,8 @@ TSVRecord = namedtuple("TSVRecord", ["locus_id", "seq", "nr_parents",
 VCFRecord = namedtuple("VCFRecord", ["seq", "data"])
 GTRecord = namedtuple("GTRecord", ["name", "seq_p5", "seq_p7", "mutations",
                                    "id_reads", "dropout"])
+GTStats = namedtuple("GTStats", ["nr_muts", "nr_snps", "nr_inserts",
+                                 "nr_deletions", "nr_snp_loci"])
 
 
 def normalize_mutation(mut):
@@ -66,6 +68,7 @@ def parse_rage_gt_file(args):
         except yaml.YAMLError as exc:
             print(exc)
     nr_muts, nr_snps, nr_inserts, nr_deletions = (0, 0, 0, 0)
+    nr_snp_loci = 0
 
     loc_seqs = []
     # filter out all loci with only one allele, i.e. all unmutated loci
@@ -87,6 +90,9 @@ def parse_rage_gt_file(args):
             else:
                 dropout.append(True)
 
+            if any((mut_type == "SNP" for mut_type, _ in mutations)):
+                loci_with_snps += 1
+
         # compile and append a record for this locus
         id_reads = locus["id reads"]
         # gt_record = GTRecord(name, seq, mutations, id_reads, dropout)
@@ -104,7 +110,8 @@ def parse_rage_gt_file(args):
         print("Nr of added inserts:", nr_inserts)
         print("Nr of added deletions:", nr_deletions)
 
-    return loc_seqs
+    gt_stats = GTStats(nr_muts, nr_snps, nr_inserts, nr_deletions, nr_snp_loci)
+    return loc_seqs, gt_stats
 
 
 def join_seqs(seq_p5, seq_p7):
@@ -181,7 +188,7 @@ def find_matching_loci(gt_data, stacks_data, similarity, verbose=True):
     return assembly
 
 
-def evaluate_assembly(assembly, gt_data, stacks_data, args):
+def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
     """Analyze an assembly of RAGE vs Stacks data.
 
     Arguments:
@@ -312,22 +319,25 @@ def evaluate_assembly(assembly, gt_data, stacks_data, args):
     print("")
     print(f"{nr_of_discovered_mutations} loci with mutations were successfully discovered")
     print(f"{nr_of_undiscovered_mutations} loci with mutations were not discovered by stacks")
+    print("SNP discovery ratio")
+    print(f"{nr_of_discovered_mutations}/{gt_stats.loci_with_snps}")
 
 
 def main(args):
     """Compare groudn truth with stacks assembly."""
     print(f"Loading gt data", file=sys.stderr)
-    gt_data = parse_rage_gt_file(args)
+    gt_data, gt_stats = parse_rage_gt_file(args)
 
     print(f"Loading stacks data", file=sys.stderr)
     stacks_data = get_stacks_data(args)
 
     print("Analyzing:", file=sys.stderr)
     assembly = find_matching_loci(gt_data, stacks_data,
-                                  similarity=args.similarity_threshold)
+                                  similarity=args.similarity_threshold,
+                                  )
 
     print("\n\nLocus Analysis:\n", file=sys.stderr)
-    evaluate_assembly(assembly, gt_data, stacks_data, args)
+    evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args)
 
     # print("\n\nSNPs Analysis:\n", file=sys.stderr)
     # evaluate_snps(assembly, gt_data, stacks_data, args)
