@@ -1,7 +1,10 @@
 import argparse
-import itertools
+import sys
+
 
 def main(args):
+    """Take all set parameters from argparse and check if they hold.
+    """
     with open(args.input, "r") as infile:
         # get last six lines
         last_lines = [infile.__next__() for _ in range(8)]
@@ -9,7 +12,27 @@ def main(args):
             last_lines.pop(0)
             last_lines.append(line)
     _, discovered, _, of_total, _, undiscovered, _, ratio = last_lines
-    print(int(discovered.strip()), int(of_total.strip()), int(undiscovered.strip()), float(ratio.strip()))
+
+    discovered = int(discovered.strip())
+    of_total = int(of_total.strip())
+    undiscovered = int(undiscovered.strip())
+    ratio = float(ratio.strip())
+    print(f"{discovered}/{of_total} missing {undiscovered} => {ratio}")
+
+    error_message = []
+
+    if args.ratio_equals and not (float(args.ratio_equals) == ratio):
+        error_message.append(f"Ratio mismatch: {args.ratio_equals} != {ratio}")
+
+    if args.ratio_less and not (float(args.ratio_less) > ratio):
+        error_message.append(f"Ratio mismatch: {args.ratio_less} >= {ratio}")
+
+    if args.ratio_less_eq and not (float(args.ratio_less_eq) >= ratio):
+        error_message.append(f"Ratio mismatch: {args.ratio_less_eq} > {ratio}")
+
+    if error_message:
+        print("\n".join(error_message), file=sys.stderr)
+        raise ValueError
 
 
 def get_argparser():
@@ -23,6 +46,14 @@ def get_argparser():
         "--ratio-equals",
         help="Fails, if ratio differs from given parameter",
         dest="ratio_equals",
+    )
+    parser.add_argument(
+        "--ratio-less",
+        help="Fails, if ratio differs from given parameter",
+    )
+    parser.add_argument(
+        "--ratio-less-eq",
+        help="Fails, if ratio differs from given parameter",
     )
     return parser
 
