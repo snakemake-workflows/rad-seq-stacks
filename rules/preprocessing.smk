@@ -27,87 +27,14 @@ rule generate_consensus_reads:
         fq1=lambda w: units.loc[w.unit, "fq1"],
         fq2="trimmed-spacer/{unit}.2.fq.gz",
     output:
-        fq1="dedup/{unit}.consensus.1.fq",
-        fq2="dedup/{unit}.consensus.2.fq",
+        fq1="dedup/{unit}.consensus.1.fq.gz",
+        fq2="dedup/{unit}.consensus.2.fq.gz",
     params:
         ... # use default nparams for now
     conda:
         "../envs/consensus.yaml"
     shell:
-        "rbt call-consensus-reads {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
-
-
-# rule unzip:
-#     input:
-#         fq2="trimmed-spacer/{unit}.2.fq.gz",
-#     output:
-#         fq2="trimmed-spacer/{unit}.2.fq",
-#     shell:
-#         """
-#         gunzip -k {input.fq2}
-#         """
-
-rule rezip:
-    input:
-        fq1="dedup/{unit}.consensus.1.fq",
-        fq2="dedup/{unit}.consensus.2.fq",
-    output:
-        fq1="dedup/{unit}.consensus.1.fq.gz",
-        fq2="dedup/{unit}.consensus.2.fq.gz",
-    shell:
-        """
-        gzip {input.fq1}
-        gzip {input.fq2}
-        """
-
-# rule mark_duplicates:
-#     input:
-#         fq1=lambda w: units.loc[w.unit, "fq1"],
-#         fq2="trimmed-spacer/{unit}.2.fq.gz"
-#     output:
-#         "dedup/{unit}.markdup.bam"
-#     log:
-#         "logs/mark-duplicates/{unit}.log"
-#     conda:
-#         "../envs/markdup.yaml"
-#     params:
-#         dbr_len=config["dbr"]["len"],
-#         dbr_dist=config["dbr"]["max_dist"],
-#         seq_dist=config["dbr"]["max_seq_dist"]
-#     script:
-#         "../scripts/mark-duplicates.py"
-
-
-# rule generate_consensus_reads:
-#     input:
-#         "dedup/{unit}.markdup.bam"
-#     output:
-#         consensus="dedup/{unit}.consensus.bam",
-#         singletons="dedup/{unit}.singletons.bam",
-#     conda:
-#         "../envs/fgbio.yaml"
-#     shell:
-#         "fgbio CallMolecularConsensusReads --min-input-base-quality 0 "
-#         "--input {input} --output {output.consensus} "
-#         "--min-reads 2 --rejects {output.singletons}"
-
-
-# rule bam_to_fastq:
-#     input:
-#         "dedup/{unit}.consensus.bam",
-#         "dedup/{unit}.singletons.bam"
-#     output:
-#         "dedup/{unit}.consensus.1.fq.gz",
-#         "dedup/{unit}.consensus.2.fq.gz"
-#     conda:
-#         "../envs/samtools.yaml"
-#     shell:
-#         """
-#         for f in {input}
-#         do
-#             samtools fastq -1 {output[0]} -2 {output[1]} $f
-#         done
-#         """
+        "./rbt call-consensus-reads {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
 
 
 rule extract:
