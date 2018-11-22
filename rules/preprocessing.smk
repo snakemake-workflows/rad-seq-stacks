@@ -19,7 +19,15 @@ rule trim_p7_spacer:
     conda:
         "../envs/seqtk.yaml"
     shell:
-        "seqtk trimfq -b {params.spacer} {input} | gzip > {output}"
+        # for b=0, seqtk trimfq uses default behaviour and quality trims
+        # to prevent this, only copy the input file, if the spacer length is 0
+        """
+        if [ {params.spacer} = 0 ]; then
+            cp {input} {output}
+        else
+            seqtk trimfq -b {params.spacer} {input} | gzip > {output}
+        fi
+        """
 
 
 rule generate_consensus_reads:
