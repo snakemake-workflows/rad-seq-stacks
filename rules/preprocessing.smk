@@ -38,7 +38,7 @@ rule generate_consensus_reads:
         fq1="dedup/{unit}.consensus.1.fq.gz",
         fq2="dedup/{unit}.consensus.2.fq.gz",
     params:
-        ... # use default nparams for now
+        ... # use default params for now
     conda:
         "../envs/consensus.yaml"
     shell:
