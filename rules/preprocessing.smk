@@ -38,11 +38,13 @@ rule generate_consensus_reads:
         fq1="dedup/{unit}.consensus.1.fq.gz",
         fq2="dedup/{unit}.consensus.2.fq.gz",
     params:
-        ... # use default params for now
+        umi_len=config["params"]["call_consensus_reads"]["umi_len"],
+        max_umi_dist=config["params"]["call_consensus_reads"]["max_umi_dist"],
+        max_seq_dist=config["params"]["call_consensus_reads"]["max_seq_dist"],
     conda:
         "../envs/consensus.yaml"
     shell:
-        "./rbt call-consensus-reads {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
+        "./rbt call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
 
 
 rule extract:

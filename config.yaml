@@ -40,3 +40,7 @@ params:
   gstacks: ""
   process_radtags: "--inline_null -c -q -r --barcode_dist_1 3 -D"
   cutadapt: "-q 20"
+  call_consensus_reads:
+    umi_len: 8
+    max_umi_dist: 1
+    max_seq_dist: 2
