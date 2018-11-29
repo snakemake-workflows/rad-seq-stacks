@@ -65,7 +65,7 @@ def parse_rage_gt_file(args):
     with open(args.yaml, 'r') as stream:
         try:
             # read all documents in the data
-            inds, loci, *_, hrls = list(yaml.load_all(stream))
+            inds, loci, *other = list(yaml.load_all(stream))
         except yaml.YAMLError as exc:
             print(exc)
     nr_muts, nr_snps, nr_inserts, nr_deletions = 0, 0, 0, 0

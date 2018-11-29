@@ -50,7 +50,7 @@ def main(args):
 
     if error_message:
         print("\n".join(error_message), file=sys.stderr)
-        raise ValueError
+        # raise ValueError
 
 
 def get_argparser():
