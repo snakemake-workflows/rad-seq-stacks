@@ -1,0 +1,98 @@
+Configuration
+barcode set                 test_barcodes.txt
+dbr sequence                    NNNNNNMMGGACG
+diversity parameter                       2.0
+individual names                           I1
+                                           I2
+                                           I3
+                                           I4
+                                           I5
+nr of individuals                           5
+nr of loci                                100
+p5 overhang                             TGCAT
+p5 recognition site                    ATGCAT
+p7 barcode               ['ACTTGA', 'GTCCGC']
+p7 overhang                               TAC
+p7 recogintion site                      GTAC
+prob. seq error                           0.0
+read length                               100
+target coverage (d_s)                      30
+used coverage model              BetaBinomial
+
+
+Statistics:
+
+Total:
+total reads                             21655
+pcr copies                               5856
+pcr copy rate                            0.27
+
+Only Valid Reads (Without Singletons and HRL reads):
+locus reads                             19027
+pcr copies                               5527
+pcr copy rate                            0.29
+
+Only Singletons:
+singletons                               2628
+pcr copies                                329
+pcr copy rate                            0.13
+
+Only HRL Reads:
+HRL reads                                   0
+pcr copies                                  0
+pcr copy rate                            0.00
+
+
+Dropout:
+dropped out loci                            0
+
+
+               |    1 GTCCGC   |    8 ACTTGA   |
+---------------|---------------|---------------|
+    1 ATCACG   |      I1       |      I3       |
+    2 CGATGT   |       -       |      I4       |
+    3 TTAGGC   |      I2       |       -       |
+    4 TGACCA   |       -       |      I5       |
+
+
+key                                                    value                          type
+------------------------------------------------------------------------------------------
+name                                                    None                      NoneType
+output_path_prefix                            'easy_dataset'                           str
+nr_individuals                                             5                           int
+loci                                                   '100'                           str
+read_length                                              100                           int
+cov                                                       30                           int
+hrl_number                                               0.0                         float
+diversity                                                2.0                         float
+gc_content                                               0.5                         float
+quality_model                                   'L100-Q70-A'                           str
+single_end                                             False                          bool
+overlap                                                    0                           int
+multiple_p7_bcs                                         True                          bool
+coverage_model                                'BetaBinomial'                           str
+bbd_alpha                                                  6                           int
+bbd_beta                                                   2                           int
+max_pcr_copy_nr                                            3                           int
+hrl_max_cov                                             1000                           int
+dbr                                         b'NNNNNNMMGGACG'                         bytes
+p5_overhang                                         b'TGCAT'                         bytes
+p7_overhang                                           b'TAC'                         bytes
+p5_rec_site                                        b'ATGCAT'                         bytes
+p7_rec_site                                          b'GTAC'                         bytes
+barcode_set                              'test_barcodes.txt'                           str
+event_prob_profile            {'common': 0.8, 'dropout': 0.1, 'mutation': 0.1}                          dict
+mutation_type_prob_profile    {'snp': 1.0, 'insert': 0.0, 'deletion': 0.0, 'p5 na alternative': 0.0, 'p7 na alternative': 0.0, 'p5 na dropout': 0.0, 'p7 na dropout': 0.0}                          dict
+prob_heterozygocity                                      0.5                         float
+prob_incomplete_digestion                                0.0                         float
+rate_incomplete_digestion                                0.2                         float
+prob_pcr_copy                                            0.2                         float
+hrl_pcr_copies                                           0.9                         float
+singleton_pcr_copies                      0.3333333333333333                         float
+prob_seq_error                                           0.0                         float
+verbosity                                                  0                           int
+zip_output                                              True                          bool
+get_barcodes                                           False                          bool
+debug_run                                              False                          bool
+version                                                False                          bool
+nr_loci                                                  100                           int

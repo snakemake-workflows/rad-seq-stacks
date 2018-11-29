@@ -1,0 +1,6 @@
+#  Ind.	p5 bc	p7 bc	p5 spc	p7 spc	Annotation
+I1	ATCACG	GTCCGC			Unit 1
+I2	TTAGGC	GTCCGC	AC		Unit 1
+I3	ATCACG	ACTTGA		AT	Unit 2
+I4	CGATGT	ACTTGA	C	AT	Unit 2
+I5	TGACCA	ACTTGA	GAC	AT	Unit 2
