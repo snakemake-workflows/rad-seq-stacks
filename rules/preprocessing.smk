@@ -3,7 +3,6 @@ rule barcodes:
     output:
         "barcodes/{unit}.tsv"
     run:
-
         d = individuals.loc[individuals.unit == wildcards.unit, ["p5_barcode", "id"]]
         #d["p7_barcode"] = units.loc[wildcards.unit, "p7_barcode"]
         d[["p5_barcode", "id"]].to_csv(output[0], index=False, header=None, sep="\t")
@@ -70,24 +69,9 @@ rule extract:
         "../scripts/extract-individuals.py"
 
 
-rule trim:
-    input:
-        "extracted/{individual}.1.fq.gz",
-        "extracted/{individual}.2.fq.gz"
-    output:
-        fastq1="trimmed-adapter/{individual}.1.fq.gz",
-        fastq2="trimmed-adapter/{individual}.2.fq.gz",
-        qc="trimmed/{individual}.qc.txt"
-    params:
-        config["params"]["cutadapt"] + (
-            "-a {}".format(config["adapter"]) if config.get("adapter") else "")
-    wrapper:
-        "0.27.1/bio/cutadapt/pe"
-
-
 rule force_same_length:
     input:
-        "trimmed-adapter/{individual}.{read}.fq.gz"
+        "extracted/{individual}.{read}.fq.gz"
     output:
         "trimmed/{individual}.{read}.fq.gz"
     conda:
