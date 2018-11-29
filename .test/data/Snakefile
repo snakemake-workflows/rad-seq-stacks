@@ -48,13 +48,16 @@ rule rage:
         l = 100,  # 100 loci
         bc_file = "test_barcodes.txt",  # file with individual information
         event_probs = " ".join([str(p) for p in (0.8, 0.1, 0.1)]),  # probabilities of common, dropout, mutation events
+        mutation_probs = " ".join([str(p) for p in (1.0, 0.0, 0.0, 0.0, )]),  # probabilities for snp 100%, insertion 0%, deletion 0%, p5 na alternative 0% , p7 na alternative 0%, p5 na dropout 0%, p7 na dropout 0%
+        incomplete_digestion = 0.0,
+        prob_seq_error = 0.0,
+        hrl_nr = 0,  # Generate a dataset without hrls
         diversity = 2.0,  # expected nr of aleles per locus
     conda:
         "../../envs/testdata.yaml"
     shell:
         """
-        rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes --event-probabilities {params.event_probs} --diversity {params.diversity} -z
+        rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes --diversity {params.diversity} --event-probabilities {params.event_probs} --mutation-type-probabilities {params.mutation_probs} --hrl-nr {params.hrl_nr} --prob-incomplete-digestion {params.prob_id} -e {params.prob_seq_error} -z
         
         mv $(python -c "import glob;print(sorted(glob.glob('*ddRAGEdataset'))[-1], end='/*')") raw_dataset
-        
         """
