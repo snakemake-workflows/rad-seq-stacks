@@ -29,6 +29,22 @@ rule trim_p7_spacer:
         """
 
 
+# remove dbr from the p7 read after consensus reads have been computed
+rule trim_umi:
+    input:
+        "dedup/{unit}.consensus.2.fq.gz"
+    output:
+        "trimmed-umi/{unit}.consensus.2.fq.gz"
+    conda:
+        "../envs/cutadapt.yaml"
+    params:
+        dbr="NNNNNNMMGGACG"
+    log:
+        "logs/trim_umi/{unit}.log"
+    shell:
+        "cutadapt -g ^{params.dbr} {input} -o {output} 2> {log}"
+
+
 rule generate_consensus_reads:
     input:
         fq1=lambda w: units.loc[w.unit, "fq1"],
@@ -49,7 +65,7 @@ rule generate_consensus_reads:
 rule extract:
     input:
         fq1=expand("dedup/{unit}.consensus.1.fq.gz", unit=units.id),
-        fq2=expand("dedup/{unit}.consensus.2.fq.gz", unit=units.id),
+        fq2=expand("trimmed-umi/{unit}.consensus.2.fq.gz", unit=units.id),
         barcodes=expand("barcodes/{unit}.tsv", unit=units.id)
     output:
         expand(["extracted/{individual}.1.fq.gz",
