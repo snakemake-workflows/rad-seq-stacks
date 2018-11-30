@@ -43,7 +43,7 @@ rule generate_consensus_reads:
     conda:
         "../envs/consensus.yaml"
     shell:
-        "./rbt call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
+        "./rbt_release call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
 
 
 rule extract:
