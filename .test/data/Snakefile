@@ -61,8 +61,10 @@ rule rage_easy:
     conda:
         "../../envs/testdata.yaml"
     shell:
-        """
-        rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes --diversity {params.diversity} --event-probabilities {params.event_probs} --mutation-type-probabilities {params.mutation_probs} --hrl-number {params.hrl_nr} --prob-incomplete-digestion {params.prob_id} -e {params.prob_seq_error} -o easy_dataset -z
-        """
-        # mv $(python -c "import glob;print(sorted(glob.glob('*ddRAGEdataset'))[-1], end='/*')") raw_dataset
+        "rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes "
+        "--diversity {params.diversity} --prob-incomplete-digestion {params.prob_id} "
+        "--event-probabilities {params.event_probs} --mutation-type-probabilities {params.mutation_probs} "
+        "--hrl-number {params.hrl_nr} --no-singletons -e {params.prob_seq_error} "
+        "-o easy_dataset -z"
+
 
