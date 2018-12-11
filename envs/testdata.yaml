@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python >=3.6
-  - ddrage =1.6.1
+  - ddrage =1.6.3
   - pysam
   - biopython
   - sortedcontainers
