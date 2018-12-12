@@ -86,9 +86,11 @@ rule tsv2bam:
         read_dir=lambda w, input: os.path.dirname(input.reads[0])
     conda:
         "../envs/stacks.yaml"
+    log:
+        "logs/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.log"
     shell:
         "tsv2bam -s {wildcards.individual} -R {params.read_dir} "
-        "-P {params.sstacks_dir}"
+        "-P {params.sstacks_dir} > {log}"
 
 
 rule gstacks:
@@ -106,9 +108,11 @@ rule gstacks:
     conda:
         "../envs/stacks.yaml"
     threads: 8
+    log:
+        "logs/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
         "gstacks {params.config} -P {params.bam_dir} -O {params.outdir} "
-        "-M {input.popmap}"
+        "-M {input.popmap} > {log}"
 
 
 rule populations:
