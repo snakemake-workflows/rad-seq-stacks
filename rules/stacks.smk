@@ -3,7 +3,7 @@
 # per infividual and data set.
 rule ustacks:
     input:
-        "trimmed/{individual}.1.fq.gz"
+        "trimmed/{individual}/{individual}.1.fq.gz"
     output:
         "ustacks/M={max_individual_mm}.m={min_reads}/{individual}.tags.tsv.gz",
         "ustacks/M={max_individual_mm}.m={min_reads}/{individual}.snps.tsv.gz",
@@ -91,8 +91,8 @@ rule tsv2bam:
         sstacks=rules.sstacks.output,
         ustacks=expand("stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{{individual}}.{type}.tsv.gz",
                        type=["tags", "snps", "alleles"]),
-        reads=["trimmed/{individual}.1.fq.gz",
-               "trimmed/{individual}.2.fq.gz"]
+        reads=["trimmed/{individual}/{individual}.1.fq.gz",
+               "trimmed/{individual}/{individual}.2.fq.gz"]
     output:
         "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.matches.bam"
     params:

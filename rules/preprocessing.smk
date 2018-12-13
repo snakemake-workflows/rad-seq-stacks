@@ -91,7 +91,7 @@ rule force_same_length:
     input:
         "extracted/{individual}.{read}.fq.gz"
     output:
-        "trimmed/{individual}.{read}.fq.gz"
+        "trimmed/{individual}/{individual}.{read}.fq.gz"
     conda:
         "../envs/seqtk.yaml"
     shell:
