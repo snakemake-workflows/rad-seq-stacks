@@ -42,7 +42,7 @@ rule trim_umi:
     log:
         "logs/trim_umi/{unit}.log"
     shell:
-        "cutadapt -g ^{params.dbr} {input} -o {output} 2> {log}"
+        "cutadapt -g ^{params.dbr} {input} -o {output} > {log}"
 
 
 rule generate_consensus_reads:
@@ -58,8 +58,10 @@ rule generate_consensus_reads:
         max_seq_dist=config["params"]["call_consensus_reads"]["max_seq_dist"],
     conda:
         "../envs/consensus.yaml"
+    log:
+        "logs/consensus/{unit}.log"
     shell:
-        "./rbt_release call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2}"
+        "./rbt_release call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
 rule extract:

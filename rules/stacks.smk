@@ -11,12 +11,15 @@ rule ustacks:
     threads: 8
     conda:
         "../envs/stacks.yaml"
+    log:
+        "logs/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.log"
     shell:
         "ustacks -p {threads} -f {input} -o {params.outdir} "
         "--name {wildcards.individual} "
         "-i {params.hash} "
         "-M {wildcards.max_individual_mm} "
-        "-m {wildcards.min_reads}"
+        "-m {wildcards.min_reads} "
+        "2> {log}"
 
 
 def fmt_ustacks_input(wildcards, input):
@@ -40,10 +43,13 @@ rule cstacks:
     conda:
         "../envs/stacks.yaml"
     threads: 8
+    log:
+        "logs/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
-        "cstacks -p {threads} {params.individuals} -o {params.outdir}"
+        "cstacks -p {threads} {params.individuals} -o {params.outdir} 2> {log}"
 
 
+# stacks: 
 rule sstacks:
     input:
         ustacks=ustacks_individuals,
@@ -58,9 +64,11 @@ rule sstacks:
     conda:
         "../envs/stacks.yaml"
     threads: 8
+    log:
+        "logs/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
         "sstacks -p {threads} {params.individuals} -c {params.cstacks_dir} "
-        "-o {params.outdir}"
+        "-o {params.outdir} 2> {log}"
 
 
 rule link_ustacks:
@@ -126,5 +134,7 @@ rule populations:
     conda:
         "../envs/stacks.yaml"
     threads: 8
+    log:
+        "logs/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
-        "populations -t {threads} -P {params.gstacks_dir} -O {params.outdir} --vcf"
+        "populations -t {threads} -P {params.gstacks_dir} -O {params.outdir} --vcf > {log}"
