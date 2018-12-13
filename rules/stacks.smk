@@ -125,8 +125,9 @@ rule gstacks:
     log:
         "logs/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
+        "echo 'Input files: {input.bams}' > log; "
         "gstacks {params.config} -P {params.bam_dir} -O {params.outdir} "
-        "-M {input.popmap} > {log}"
+        "-M {input.popmap} >> {log}"
 
 
 rule populations:
