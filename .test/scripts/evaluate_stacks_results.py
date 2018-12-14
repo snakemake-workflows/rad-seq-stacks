@@ -123,7 +123,8 @@ def parse_rage_gt_file(args):
 
 def join_seqs(seq_p5, seq_p7):
     """Join two sequences like the ones written by stacks."""
-    return "".join((seq_p5, "NNNNNN", dp.reverse_complement(seq_p7)))
+    # return "".join((seq_p5, "NNNNN", dp.reverse_complement(seq_p7)))
+    return "".join((seq_p5, "NNNNN", seq_p7))
 
 
 def get_stacks_data(args):
@@ -223,48 +224,28 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                       record.seq,
                       file=outfile)
 
-            gt_p5_seq = gt_locus.seq_p5
-            gt_p7_seq = gt_locus.seq_p7
             successfully_detected = False
 
             # compute semiglobal alignments of the loci to verify that
             # they actually match
             for stacks_locus in stacks_loci:
-                try:
-                    stacks_p5_seq, *_, stacks_p7_seq = stacks_locus.seq.split(b"N")
-                except ValueError:
-                    # If the sequence was not joined with Ns, use the whole
-                    # sequence twice for alignment purposes
-                    stacks_p5_seq = stacks_locus.seq
-                    stacks_p7_seq = stacks_locus.seq
-                all_p5_alns = align.globalms(gt_p5_seq,
-                                             stacks_p5_seq.decode(),
-                                             1,   # match score
-                                             0,   # mismatch panalty
-                                             -5,  # gap open penalty
-                                             -3,  # gap extend penalty
-                                             penalize_end_gaps=(False, False),
-                                             one_alignment_only=True,
-                                             )
-                all_p7_alns = align.globalms(gt_p7_seq,
-                                             dp.reverse_complement(
-                                                 stacks_p7_seq.decode()),
-                                             1,   # match score
-                                             0,   # mismatch panalty
-                                             -5,  # gap open penalty
-                                             -3,  # gap extend penalty
-                                             penalize_end_gaps=(False, False),
-                                             one_alignment_only=True,
-                                             )
+                all_alns = align.globalms(gt_seq,
+                                          stacks_locus.seq.decode(),
+                                          1,   # match score
+                                          0,   # mismatch panalty
+                                          -5,  # gap open penalty
+                                          -3,  # gap extend penalty
+                                          penalize_end_gaps=(False, False),
+                                          one_alignment_only=True,
+                )
                 # pick the first reported alignments
                 # these are either unique or good enough
-                p5_aln = all_p5_alns[0]
-                p7_aln = all_p7_alns[0]
+                aln = all_alns[0]
                 # print(format_alignment(*p5_aln),
                 #       format_alignment(*p7_aln))
 
-                if p5_aln[2] + p7_aln[2] >= 140:
-                    print(f"Successful match: {p5_aln[2] + p7_aln[2]}",
+                if aln[2] >= 140:
+                    print(f"Successful match: {aln[2]}",
                           file=sys.stderr)
                     # print(p5_aln)
                     print([(mutation.alleles, mutation.pos) for mutation in stacks_locus.data], file=sys.stderr)
@@ -281,8 +262,8 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                     #       detected by stacks
                 else:
                     print(f"MISMATCH with {stacks_locus.data[0].chrom}")
-                    # print(format_alignment(*p5_aln),
-                    #       format_alignment(*p7_aln))
+                    print(format_alignment(*p5_aln),
+                          format_alignment(*p7_aln))
             
             if not stacks_loci:
                 print("      ", "No matching stack locus found", file=outfile)
