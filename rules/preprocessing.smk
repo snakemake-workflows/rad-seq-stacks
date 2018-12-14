@@ -64,15 +64,28 @@ rule generate_consensus_reads:
         "./rbt_release call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
+rule merge_pe_reads:
+    input:
+        fq1="dedup/{unit}.consensus.1.fq.gz",
+        fq2="trimmed-umi/{unit}.consensus.2.fq.gz",
+    output:
+        merged="merged/{unit}.fq.gz"
+    conda:
+        "../envs/merge.yaml"
+    log:
+        "logs/merge/{unit}.log"
+    params:
+        padding_quality='H'
+    shell:
+        "python ../scripts/merge_mates.py {input.fq1}  {input.fq2}  {output.merged} --padding-quality {params.padding_quality} > {log}"
+
+
 rule extract:
     input:
-        fq1=expand("dedup/{unit}.consensus.1.fq.gz", unit=units.id),
-        fq2=expand("trimmed-umi/{unit}.consensus.2.fq.gz", unit=units.id),
+        fq1=expand("merged/{unit}.fq.gz", unit=units.id),
         barcodes=expand("barcodes/{unit}.tsv", unit=units.id)
     output:
-        expand(["extracted/{individual}.1.fq.gz",
-                "extracted/{individual}.2.fq.gz"],
-               individual=individuals.id)
+        expand("extracted/{individual}.fq.gz", individual=individuals.id)
     log:
         expand("logs/extract/{unit}.log",
                unit=units.id)
@@ -89,9 +102,9 @@ rule extract:
 
 rule force_same_length:
     input:
-        "extracted/{individual}.{read}.fq.gz"
+        "extracted/{individual}.fq.gz"
     output:
-        "trimmed/{individual}/{individual}.{read}.fq.gz"
+        "trimmed/{individual}/{individual}.fq.gz"
     conda:
         "../envs/seqtk.yaml"
     shell:

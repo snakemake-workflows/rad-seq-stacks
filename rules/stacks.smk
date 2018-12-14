@@ -3,7 +3,7 @@
 # per infividual and data set.
 rule ustacks:
     input:
-        "trimmed/{individual}/{individual}.1.fq.gz"
+        "trimmed/{individual}/{individual}.fq.gz"
     output:
         "ustacks/M={max_individual_mm}.m={min_reads}/{individual}.tags.tsv.gz",
         "ustacks/M={max_individual_mm}.m={min_reads}/{individual}.snps.tsv.gz",
@@ -91,19 +91,18 @@ rule tsv2bam:
         sstacks=rules.sstacks.output,
         ustacks=expand("stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{{individual}}.{type}.tsv.gz",
                        type=["tags", "snps", "alleles"]),
-        reads=["trimmed/{individual}/{individual}.1.fq.gz",
-               "trimmed/{individual}/{individual}.2.fq.gz"]
+        reads="trimmed/{individual}/{individual}.fq.gz",
     output:
         "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.matches.bam"
     params:
         sstacks_dir=lambda w, output: os.path.dirname(output[0]),
-        read_dir=lambda w, input: os.path.dirname(input.reads[0])
+        read_dir=lambda w, input: os.path.dirname(input.reads)
     conda:
         "../envs/stacks.yaml"
     log:
         "logs/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.log"
     shell:
-        "tsv2bam -s {wildcards.individual} -R {params.read_dir} "
+        "tsv2bam -s {wildcards.individual} "
         "-P {params.sstacks_dir} > {log}"
 
 
