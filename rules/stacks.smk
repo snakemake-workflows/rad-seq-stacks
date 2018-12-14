@@ -55,7 +55,8 @@ rule cstacks:
         "cstacks -p {threads} {params.individuals} -o {params.outdir} 2> {log}"
 
 
-# stacks: 
+# search stacks: Search stacks of individuals (from ustacks) against the catalog (from cstacks)
+# Generates a matches.tsv file for each data set which contains allele information for the data set.
 rule sstacks:
     input:
         ustacks=ustacks_individuals,
@@ -77,6 +78,7 @@ rule sstacks:
         "-o {params.outdir} 2> {log}"
 
 
+# Symlink ustacks results to avoid copying them to where tsv2bam expects them.
 rule link_ustacks:
     input:
         "ustacks/M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz"
@@ -86,6 +88,8 @@ rule link_ustacks:
         "ln -s -r {input} {output}"
 
 
+# Use the alleles saved in matches.tsv, the clustering information from ustacks, and the reads
+# to generate a matches.bam file which contains the aligned reads for each loci.
 rule tsv2bam:
     input:
         sstacks=rules.sstacks.output,
@@ -106,6 +110,8 @@ rule tsv2bam:
         "-P {params.sstacks_dir} > {log}"
 
 
+# genotype stacks: Use the aligned reads from the matches.bam and the population map to
+# generate locus sequences (catalog.fa.gz)  and SNP calls (catalog.calls).
 rule gstacks:
     input:
         bams=expand("stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{individual}.matches.bam",
