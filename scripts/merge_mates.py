@@ -9,8 +9,6 @@ import dinopy
 @click.argument("merged_file", nargs=1, type=click.Path(dir_okay=True))
 @click.option("--padding-bases", "padding_bases", default=b"NNNNN")
 @click.option("--padding-quality", "padding_quality", default=b"!")
-# TODO: This might cause trouble with stack's quality filtering.
-# Maybe use b'H' instead
 def merge_mates(p5_file, p7_file, merged_file, padding_bases, padding_quality):
     """Merge the p5 and p7 reads from the input files into one read,
     joined by padding bases.
