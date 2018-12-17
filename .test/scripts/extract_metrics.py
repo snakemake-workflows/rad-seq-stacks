@@ -23,7 +23,8 @@ def main(args):
         "undiscovered": int(undiscovered.strip()),
         "ratio": float(ratio.strip()),
         }
-    print(f"{metrics['discovered']}/{metrics['of_total']} missing "
+    print(f"Ratio of discovered to total simulated SNPs:\n  "
+          f"{metrics['discovered']}/{metrics['of_total']} missing "
           f"{metrics['undiscovered']} => {metrics['ratio']}",
           file=sys.stdout,
           )

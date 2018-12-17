@@ -16,6 +16,10 @@ dbr:
 # Leave empty if no trimming shall be performed.
 adapter: ""
 
+reads:
+  length: 100
+  join_seq: NNNNN
+
 params:
   stacks:
     - max_individual_mm: 4

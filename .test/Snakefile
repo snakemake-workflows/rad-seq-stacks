@@ -17,7 +17,7 @@ rule all:
     input:
         expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
                p=config["params"]["stacks"]),
-        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.txt",
+        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.yaml",
                p=config["params"]["stacks"]),
         "report.txt"
 
@@ -44,11 +44,14 @@ rule compare_loci:
         vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/populations.snps.vcf",
         gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml"
     conda:
         "../envs/testdata.yaml"
+    params:
+        read_length=config["reads"]["length"],
+        join_seq=config["reads"]["join_seq"],
     shell:
-        "python scripts/evaluate_stacks_results.py --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
+        "python scripts/evaluate_stacks_results.py --read-length {params.read_length} --join-seq {params.join_seq} --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
 
 
 rule verify_results:
@@ -56,7 +59,7 @@ rule verify_results:
         result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
         expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.yaml"
     conda:
         "../envs/testdata.yaml"
     shell:
@@ -75,8 +78,8 @@ rule aggregate_results:
         with open(output.report, "w") as report_file:
             for result in input.results:
                 with open(result, "r") as res_file:
-                    report_file.write(os.path.normpath(result).split(os.sep)[1])
-                    report_file.write(res_file.read())
+                    report_file.write(os.path.normpath(result).split(os.sep)[1] + "\n")
+                    report_file.write(res_file.read() + "\n")
 
 
 rule clean:

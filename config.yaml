@@ -12,6 +12,9 @@ dbr:
   # maximum hamming distance of read sequence to be considered a duplicate
   max_seq_dist: 2
 
+reads:
+  length: 100
+  join_seq: NNNNN
 
 params:
   stacks:
