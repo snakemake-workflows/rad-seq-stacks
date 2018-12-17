@@ -19,8 +19,7 @@ rule all:
                p=config["params"]["stacks"]),
         expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.txt",
                p=config["params"]["stacks"]),
-        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/checked",
-               p=config["params"]["stacks"]),
+        "report.txt"
 
 
 rule index_stacks_loci:
@@ -57,11 +56,28 @@ rule verify_results:
         result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
         expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/checked"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
     conda:
         "../envs/testdata.yaml"
     shell:
-        "python scripts/extract_metrics.py {input.result} {input.expected} && touch {output}"
+        "python scripts/extract_metrics.py {input.result} {input.expected} > {output}"
+
+
+rule aggregate_results:
+    input:
+        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/result.txt",
+               p=config["params"]["stacks"])
+    output:
+        report="report.txt"
+    run:
+        import os
+        import sys
+        with open(output.report, "w") as report_file:
+            for result in input.results:
+                with open(result, "r") as res_file:
+                    report_file.write(os.path.normpath(result).split(os.sep)[1])
+                    report_file.write(res_file.read())
+
 
 rule clean:
     shell:

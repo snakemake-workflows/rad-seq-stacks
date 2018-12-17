@@ -25,7 +25,7 @@ def main(args):
         }
     print(f"{metrics['discovered']}/{metrics['of_total']} missing "
           f"{metrics['undiscovered']} => {metrics['ratio']}",
-          file=sys.stderr,
+          file=sys.stdout,
           )
 
     # load dictionary of expected values
@@ -49,7 +49,7 @@ def main(args):
                                      f"{target_value}' does not hold.")
 
     if error_message:
-        print("\n".join(error_message), file=sys.stderr)
+        print("\n".join(error_message), file=sys.stdout)
         # raise ValueError
 
 
