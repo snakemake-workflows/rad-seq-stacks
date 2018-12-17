@@ -99,8 +99,6 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 "stacks_loci": []
             }
 
-            
-
             successfully_detected = False
 
             # compute semiglobal alignments of the loci to verify that

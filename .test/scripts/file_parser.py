@@ -71,6 +71,7 @@ def parse_rage_gt_file(args):
     nr_muts, nr_snps, nr_inserts, nr_deletions = 0, 0, 0, 0
     nr_loci_with_snps, nr_loci_with_muts = 0, 0
 
+    p5_enz = list(inds["Individual Information"].values())[0]["p5 overhang"]
     loc_seqs = []
     # filter out all loci with only one allele, i.e. all unmutated loci
     loci_with_snps = ((n, l) for (n, l) in loci.items()
@@ -121,7 +122,7 @@ def parse_rage_gt_file(args):
         # compile and append a record for this locus
         id_reads = locus["id reads"]
         # gt_record = GTRecord(name, seq, mutations, id_reads, dropout)
-        gt_record = GTRecord(name, locus["p5 seq"], locus["p7 seq"],
+        gt_record = GTRecord(name, p5_enz + locus["p5 seq"], locus["p7 seq"],
                              mutations, id_reads, dropout,
                              gt_alleles, locus["allele frequencies"])
         nr_muts += len(mutations)
