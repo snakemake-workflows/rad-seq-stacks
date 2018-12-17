@@ -63,6 +63,10 @@ rule verify_results:
     shell:
         "python scripts/extract_metrics.py {input.result} {input.expected} && touch {output}"
 
+rule clean:
+    shell:
+        "rm -r calls dedup extracted logs merged stacks trimmed trimmed-spacer trimmed-umi ustacks validation report.txt"
+
 
 include: "../rules/common.smk"
 include: "../rules/preprocessing.smk"
