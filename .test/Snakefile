@@ -51,7 +51,9 @@ rule compare_loci:
         read_length=config["reads"]["length"],
         join_seq=config["reads"]["join_seq"],
     shell:
-        "python scripts/evaluate_stacks_results.py --read-length {params.read_length} --join-seq {params.join_seq} --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
+        """
+        python scripts/evaluate_stacks_results.py --read-length {params.read_length} --join-seq {params.join_seq} --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}
+        """
 
 
 rule verify_results:

@@ -102,7 +102,7 @@ def parse_rage_gt_file(args):
                             normalize_mutation(a, offset)
                             for a in allele["mutations"]
                         )
-                        if not nr_allele in gt_alleles:
+                        if nr_allele not in gt_alleles:
                             gt_alleles[nr_allele] = {
                                 "frequency": locus["allele frequencies"][nr_allele],
                                 "mutations": process_mutations(normalized_mutations)
@@ -163,6 +163,9 @@ def get_stacks_data(args):
         else:
             loc_seqs.append(record)
             record = VCFRecord(seq, [variant_record])
+            # print(dir(variant_record))
+            # print("AF", variant_record.info["AF"])
+            # print("NS", variant_record.info["NS"])
             last_locus = variant_record.chrom
 
     return loc_seqs

@@ -90,8 +90,8 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
         }
         for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
             # user output
-            print("Handling gt ", gt_name, ":  ", sep="", end="",
-                  file=sys.stderr)
+            # print("Handling gt ", gt_name, ":  ", sep="", end="",
+            #       file=sys.stderr)
             # file output
             outdata["Loci"][gt_name] = {
                 "ground_truth_seq": gt_seq,
@@ -125,18 +125,26 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 #       format_alignment(*p7_aln))
 
                 if aln[2] >= 140:
-                    print(f"Successful match: {aln[2]}",
-                          file=sys.stderr)
+                    # print(f"Successful match: {aln[2]}",
+                    #       file=sys.stderr)
                     # print(p5_aln)
-                    print(
-                        [(mutation.alleles, mutation.pos)
-                         for mutation in stacks_locus.data],
-                        file=sys.stderr,
-                    )
-                    print(gt_locus.mutations, file=sys.stderr)
-                    print(gt_locus.allele_frequencies, file=sys.stderr)
+                    # print(
+                    #     [(mutation.alleles, mutation.pos)
+                    #      for mutation in stacks_locus.data],
+                    #     file=sys.stderr,
+                    # )
+                    # print(gt_locus.mutations, file=sys.stderr)
+                    # print(gt_locus.allele_frequencies, file=sys.stderr)
                     successfully_detected = True
-                    stacks_locus_info["SNPs"] = [f"{entry.chrom}@{entry.pos} {entry.ref}>{''.join(entry.alts)}" for entry in stacks_locus.data]
+                    stacks_locus_info["SNPs"] = [
+                        {
+                            "orientation": "p7" if entry.pos > 98 else "p5",  # TODO: this is not 100% accurate
+                            "pos": entry.pos,
+                            "ref": entry.ref,
+                            "alt": "".join(entry.alts),
+                        } for entry in stacks_locus.data
+                    ]
+                    # f"{entry.info['AF']} {entry.chrom}@{entry.pos} {entry.ref}>{''.join(entry.alts)}" for entry in stacks_locus.data
 
                     # TODO: Evaluate if right SNPs were found
                     #       (mind that Stacks might not call the allele RAGE
@@ -159,7 +167,7 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             else:
                 nr_loci_with_undiscovered_mutations += 1
             nr_evaluated_loci += 1
-            print("\n", file=sys.stderr)
+            # print("\n", file=sys.stderr)
             # print("\n", file=outfile)
 
 
