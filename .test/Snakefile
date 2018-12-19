@@ -61,7 +61,7 @@ rule verify_results:
         result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
         expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.yaml"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
     conda:
         "../envs/testdata.yaml"
     shell:

@@ -9,3 +9,4 @@ dependencies:
   - sortedcontainers
   - pip:
     - mmh3
+    - recordtype

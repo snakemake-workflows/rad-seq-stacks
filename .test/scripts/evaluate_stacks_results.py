@@ -40,8 +40,8 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
         locus records.
     """
     # sketching parameters
-    k = 6
-    s = 50
+    k = 7
+    s = 100
     sketch = partial(sk.bottom_sketch, k=k, s=s)
 
     # initialize assembly
@@ -53,19 +53,30 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
     # pre-sketch the data to avoid quadratic (re-) sketching
     sketched_stacks_data = [(sketch(stacks_record.seq), stacks_record)
                             for stacks_record in stacks_data]
+
+    # for s, record in sketched_stacks_data:
+    #     print(record, s)
+
     # print("Searching")
     for index, (gt_record) in enumerate(gt_data):
         # print user output
         if verbose and index % 100 == 0:
             print(index, file=sys.stderr)
         joined_gt_seq = join_seqs(gt_record.seq_p5, gt_record.seq_p7, join_seq)
+        # print(joined_gt_seq)
         s_gt = sketch(joined_gt_seq)
+
         # compare all stacks locus sketches against the active RAGE loc. sketch
         # Append the loci of all similar sequences to the assembly list.
+
         for sketch_stacks, record in sketched_stacks_data:
             if sk.compare_sketches(s_gt, sketch_stacks) > similarity:
                 assembly[(gt_record.name, joined_gt_seq)][1].append(record)
+                record.found = True
 
+    for _, record in sketched_stacks_data:
+        if record.found == False:
+            print("Not found:", record.seq)
     return assembly
 
 
@@ -79,9 +90,11 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
         stacks_data (list of TSVRecords): From a Stacks _export.tsv file.
         args (argparse.NameSpace): User parameters.
     """
+    nr_undiscovered_gt_loci = 0
     nr_loci_with_undiscovered_mutations = 0
     nr_loci_with_discovered_mutations = 0
     nr_evaluated_loci = 0
+    nr_successfully_aligned_loci = 0
     # write mapping to file
 
     with open(args.output, "w") as outfile:
@@ -89,25 +102,28 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             "Loci": {},
         }
         for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-            # user output
-            # print("Handling gt ", gt_name, ":  ", sep="", end="",
-            #       file=sys.stderr)
-            # file output
+
             outdata["Loci"][gt_name] = {
                 "ground_truth_seq": gt_seq,
                 "ground_truth_alleles": gt_locus.alleles,
                 "stacks_loci": []
             }
 
-            successfully_detected = False
+            if len(stacks_loci) > 1:
+                # TODO: This means that more than one stacks lo
+                print("HIT")
+                print(gt_seq)
+                print(stacks_loci)
+            successfully_detected, successfully_aligned = False, False
+            undetected, no_mutations = False, False
 
             # compute semiglobal alignments of the loci to verify that
             # they actually match
             for stacks_locus in stacks_loci:
-                
+
                 stacks_locus_info = {
                     "seq": stacks_locus.seq.decode(),
-                }   
+                }
                 all_alns = align.globalms(
                     gt_seq,
                     stacks_locus.seq.decode(),
@@ -124,18 +140,8 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 # print(format_alignment(*p5_aln),
                 #       format_alignment(*p7_aln))
 
-                if aln[2] >= 140:
-                    # print(f"Successful match: {aln[2]}",
-                    #       file=sys.stderr)
-                    # print(p5_aln)
-                    # print(
-                    #     [(mutation.alleles, mutation.pos)
-                    #      for mutation in stacks_locus.data],
-                    #     file=sys.stderr,
-                    # )
-                    # print(gt_locus.mutations, file=sys.stderr)
-                    # print(gt_locus.allele_frequencies, file=sys.stderr)
-                    successfully_detected = True
+                if aln[2] >= 130:
+                    successfully_aligned = True
                     stacks_locus_info["SNPs"] = [
                         {
                             "orientation": "p7" if entry.pos > 98 else "p5",  # TODO: this is not 100% accurate
@@ -144,7 +150,12 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                             "alt": "".join(entry.alts),
                         } for entry in stacks_locus.data
                     ]
-                    # f"{entry.info['AF']} {entry.chrom}@{entry.pos} {entry.ref}>{''.join(entry.alts)}" for entry in stacks_locus.data
+                    if stacks_locus.data:
+                        successfully_detected = True
+                    elif gt_locus.mutations:
+                        undetected = True
+                    else:
+                        no_mutations = True
 
                     # TODO: Evaluate if right SNPs were found
                     #       (mind that Stacks might not call the allele RAGE
@@ -157,19 +168,23 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                     print(f"MISMATCH with {stacks_locus.data[0].chrom}")
                     print(format_alignment(*aln))
                 outdata["Loci"][gt_name]["stacks_loci"].append(stacks_locus_info)
-                
+
             if not stacks_loci:
                 # print("      ", "No matching stack locus found", file=outfile)
                 outdata["Loci"][gt_name]["stacks_loci"] = "No matches found"
-                nr_loci_with_undiscovered_mutations += 1
-            elif successfully_detected:
-                nr_loci_with_discovered_mutations += 1
-            else:
-                nr_loci_with_undiscovered_mutations += 1
-            nr_evaluated_loci += 1
-            # print("\n", file=sys.stderr)
-            # print("\n", file=outfile)
+                nr_undiscovered_gt_loci += 1
 
+
+            if successfully_detected:
+                nr_loci_with_discovered_mutations += 1
+            elif undetected:
+                nr_loci_with_undiscovered_mutations += 1
+            elif no_mutations:
+                ...
+
+            nr_evaluated_loci += 1
+            if successfully_aligned:
+                nr_successfully_aligned_loci += 1
 
         # Check to how many RAGE loci each Stacks loci was assigned to.
         # This should always be 1.
@@ -181,7 +196,11 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 # all gt_loci assigned to a stacks locus (identified by
                 # the chrom field in the VCF record) should point to
                 # the same locus, hence they all just need to be counted as one
-                locus_assignment_counter[stacks_locus.data[0].chrom] += 1
+                if stacks_locus.data:
+                    locus_assignment_counter[stacks_locus.data[0].chrom] += 1
+                else:
+                    # TODO:
+                    ...
         most_assigned_gt_loci = locus_assignment_counter.most_common(5)
         stacks_locus_name, assigned_gt_loci = most_assigned_gt_loci[0]
         if assigned_gt_loci > 1:
@@ -197,11 +216,11 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
         # 2. iterate thourgh the gt_locus -> stacks-locus mapping
         # 3. increment the counter for each stacks locus
         stacks_locus_occurence_count = Counter(
-            {rec.data[0].chrom: 0 for rec in stacks_data})
+            {rec.name: 0 for rec in stacks_data})
         for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
             for locus in stacks_loci:
                 # count every gt locus that has an assigned stacks locus
-                stacks_locus_occurence_count[locus.data[0].chrom] += 1
+                stacks_locus_occurence_count[locus.name] += 1
 
         stacks_only_loci = [
             (l, c) for l, c in stacks_locus_occurence_count.items() if c == 0]
@@ -297,7 +316,7 @@ def get_argparser():
              "considered similar.",
         dest="similarity_threshold",
         type=float,
-        default=0.3,
+        default=0.2,
     )
     return parser
 

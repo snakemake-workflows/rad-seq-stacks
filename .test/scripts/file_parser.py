@@ -3,17 +3,19 @@ import dinopy as dp
 import pysam
 import yaml
 from collections import namedtuple
+from recordtype import recordtype
 
 TSVRecord = namedtuple("TSVRecord", ["locus_id", "seq", "nr_parents",
                                      "nr_snps", "snps", "nr_alleles",
                                      "genotypes"])
-VCFRecord = namedtuple("VCFRecord", ["seq", "data"])
 GTRecord = namedtuple("GTRecord", ["name", "seq_p5", "seq_p7", "mutations",
                                    "id_reads", "dropout", "alleles",
                                    "allele_frequencies"])
 GTStats = namedtuple("GTStats", ["nr_muts", "nr_snps", "nr_inserts",
                                  "nr_deletions", "nr_loci_with_snps",
                                  "nr_loci_with_muts", "nr_loci"])
+
+VCFRecord = recordtype("VCFRecord", ["name", "seq", "data", "found"])
 
 
 def normalize_mutation(mut, offset):
@@ -86,7 +88,7 @@ def parse_rage_gt_file(args):
     overhang_variance = max(overhang_lengths) - min(overhang_lengths)
     offset = args.read_length - (min(spacer_lengths) + min(overhang_lengths)) + len(args.join_seq)
 
-    for name, locus in loci_with_snps:
+    for name, locus in loci.items():
         dropout = []
         mutations = set()
         gt_alleles = {}
@@ -144,28 +146,41 @@ def parse_rage_gt_file(args):
 
 def get_stacks_data(args):
     """Read in stacks VCF file."""
-    loc_seqs = []
+    loc_seqs = dict()
     haplotypes_file = pysam.VariantFile(args.stacks_haplo, 'r')
     indexed_far = dp.FastaReader(args.stacks_fa)
 
     record = None
     last_locus = None
+    chromosome = None
+
     # merge consecutive lines describing SNPs on the same locus.
     for variant_record in haplotypes_file:
         chromosome = variant_record.chrom
-        seq = list(indexed_far[chromosome])[0].sequence
-
         if record is None:
-            record = VCFRecord(seq, [variant_record])
+            seq = list(indexed_far[chromosome])[0].sequence
+            record = VCFRecord(chromosome, seq, [variant_record], False)
             last_locus = variant_record.chrom
         elif variant_record.chrom == last_locus:
             record.data.append(variant_record)
         else:
-            loc_seqs.append(record)
-            record = VCFRecord(seq, [variant_record])
-            # print(dir(variant_record))
-            # print("AF", variant_record.info["AF"])
-            # print("NS", variant_record.info["NS"])
+            loc_seqs[last_locus] = record
+            seq = list(indexed_far[chromosome])[0].sequence
+            record = VCFRecord(chromosome, seq, [variant_record], False)
             last_locus = variant_record.chrom
 
-    return loc_seqs
+    # write the last record
+    if chromosome is not None:
+        loc_seqs[chromosome] = record
+
+    far = dp.FastaReader(args.stacks_fa)
+    for seq, name, *_ in far.chromosomes():
+
+        # Split off the second part of stacks locus names.
+        # In the vcf files, the information is not included
+        chromosome = name.decode().split()[0]
+
+        if chromosome not in loc_seqs:
+            loc_seqs[chromosome] = VCFRecord(chromosome, seq, [], False)
+
+    return list(loc_seqs.values())
