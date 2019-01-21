@@ -1,0 +1,5 @@
+channels:
+  - bioconda
+dependencies:
+  - rust-bio-tools
+  - starcode

@@ -1,50 +1,69 @@
-Configuration
-barcode set                 test_barcodes.txt
-dbr sequence                    NNNNNNMMGGACG
-diversity parameter                       2.0
-individual names                           I1
-                                           I2
-                                           I3
-                                           I4
-                                           I5
-nr of individuals                           5
-nr of loci                                100
-p5 overhang                             TGCAT
-p5 recognition site                    ATGCAT
-p7 barcode               ['ACTTGA', 'GTCCGC']
-p7 overhang                               TAC
-p7 recogintion site                      GTAC
-prob. seq error                          0.01
-read length                               100
-target coverage (d_s)                      30
-used coverage model              BetaBinomial
+Configuration:
+
+barcode set                      test_barcodes.txt
+dbr sequence                         NNNNNNMMGGACG
+diversity parameter                            2.0
+individual names                                I1
+                                                I2
+                                                I3
+                                                I4
+                                                I5
+nr of individuals                                5
+nr of loci                                     100
+p5 overhang                                  TGCAT
+p5 recognition site                         ATGCAT
+p7 barcode                    ['GTCCGC', 'ACTTGA']
+p7 overhang                                    TAC
+p7 recogintion site                           GTAC
+prob. seq error                                0.0
+read length                                    100
+target coverage (d_s)                           30
+used coverage model                   BetaBinomial
 
 
-Statistics:
+Read Type Statistics:
 
-Total:
-total reads                             39163
-pcr copies                              10429
-pcr copy rate                            0.27
+Overview:
+Total Simulated Reads                        19148
+Total Simulated PCR Copies                    5513
+  -> PCR Copy Rate                            0.29
 
-Only Valid Reads (Without Singletons and HRL reads):
-locus reads                             18682
-pcr copies                               5387
-pcr copy rate                            0.29
+Locus Reads Only (No Singletons and HRL reads):
+Total Locus Reads                            19148
+Simulated Locus Reads                        13635
+PCR Copies of Locus Reads                     5513
+  -> PCR Copy Rate                            0.29
 
-Only Singletons:
-singletons                               2475
-pcr copies                                288
-pcr copy rate                            0.12
+Singletons Only:
+Total Singleton Reads                            0
+Simulated Singleton Reads                        0
+PCR Copies of Singletons                         0
+  -> PCR Copy Rate                            0.00
 
-Only HRL Reads:
-HRL reads                               18006
-pcr copies                               4754
-pcr copy rate                            0.26
+HRL Reads Only:
+Total HRL Reads                                  0
+Simulated HRL Reads                              0
+PCR Copies of HRL Reads                          0
+  -> PCR Copy Rate                            0.00
+
+Read Type Distribution:
+
+████████████████████
+████████████████████
+████████████████████
+███████████░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+
+█: Locus Reads
+░: Locus Read PCR copies
+-: Singletons
+~: Singleton PCR Copies
+=: HRL Reads
+≈: HRL Read PCR Copies
 
 
 Dropout:
-dropped out loci                            0
+Dropped Out Loci                                 0
 
 
                |    1 GTCCGC   |    8 ACTTGA   |
@@ -58,12 +77,13 @@ dropped out loci                            0
 key                                                    value                          type
 ------------------------------------------------------------------------------------------
 name                                                    None                      NoneType
-output_path_prefix                                        ''                           str
+output_path_prefix                            'easy_dataset'                           str
 nr_individuals                                             5                           int
 loci                                                   '100'                           str
 read_length                                              100                           int
 cov                                                       30                           int
-hrl_number                                              0.05                         float
+hrl_number                                               0.0                         float
+no_singletons                                           True                          bool
 diversity                                                2.0                         float
 gc_content                                               0.5                         float
 quality_model                                   'L100-Q70-A'                           str
@@ -82,14 +102,14 @@ p5_rec_site                                        b'ATGCAT'                    
 p7_rec_site                                          b'GTAC'                         bytes
 barcode_set                              'test_barcodes.txt'                           str
 event_prob_profile            {'common': 0.8, 'dropout': 0.1, 'mutation': 0.1}                          dict
-mutation_type_prob_profile    {'snp': 0.8999, 'insert': 0.05, 'deletion': 0.05, 'p5 na alternative': 1.0000000000000001e-07, 'p7 na alternative': 5e-06, 'p5 na dropout': 8.99e-05, 'p7 na dropout': 5e-06}                          dict
+mutation_type_prob_profile    {'snp': 1.0, 'insert': 0.0, 'deletion': 0.0, 'p5 na alternative': 0.0, 'p7 na alternative': 0.0, 'p5 na dropout': 0.0, 'p7 na dropout': 0.0}                          dict
 prob_heterozygocity                                      0.5                         float
-prob_incomplete_digestion                                0.1                         float
+prob_incomplete_digestion                                0.0                         float
 rate_incomplete_digestion                                0.2                         float
 prob_pcr_copy                                            0.2                         float
 hrl_pcr_copies                                           0.9                         float
 singleton_pcr_copies                      0.3333333333333333                         float
-prob_seq_error                                          0.01                         float
+prob_seq_error                                           0.0                         float
 verbosity                                                  0                           int
 zip_output                                              True                          bool
 get_barcodes                                           False                          bool

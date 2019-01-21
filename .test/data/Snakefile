@@ -2,59 +2,69 @@ p7_barcodes = ["GTCCGC", "ACTTGA"]
 
 rule all:
     input:
-        expand("reads_{barcodes}_{orientation}.fastq.gz", barcodes=p7_barcodes, orientation=(1,2)),
-        expand("reads_{barcodes}_{orientation}_noheader.fastq.gz", barcodes=p7_barcodes, orientation=(1,2)),
-        expand("reads_{barcodes}_{orientation}_annotation.txt", barcodes=p7_barcodes, orientation=(1,2)),
-        expand("raw_dataset/ddRAGEdataset_2_p7_barcodes_{orientation}.fastq.gz", orientation=(1,2)),
-        "raw_dataset/ddRAGEdataset_2_p7_barcodes_barcodes.txt",
-        "raw_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
-        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_annotation.txt",
-        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_statstics.pdf",
+        expand("easy_dataset/reads_{barcodes}_{orientation}.fastq.gz", barcodes=p7_barcodes, orientation=(1,2)),
+        expand("easy_dataset/reads_{barcodes}_{orientation}_noheader.fastq.gz", barcodes=p7_barcodes, orientation=(1,2)),
+        expand("easy_dataset/reads_{barcodes}_{orientation}_annotation.txt", barcodes=p7_barcodes, orientation=(1,2)),
+        expand("easy_dataset/ddRAGEdataset_2_p7_barcodes_{orientation}.fastq.gz", orientation=(1,2)),
+        "easy_dataset/ddRAGEdataset_2_p7_barcodes_barcodes.txt",
+        "easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+        "easy_dataset/logs/ddRAGEdataset_2_p7_barcodes_annotation.txt",
+        "easy_dataset/logs/ddRAGEdataset_2_p7_barcodes_statstics.pdf",
 
 
 rule split_p7:
     input:
-        p5 = "raw_dataset/ddRAGEdataset_2_p7_barcodes_1.fastq.gz",
-        p7 = "raw_dataset/ddRAGEdataset_2_p7_barcodes_2.fastq.gz",
+        p5 = "{dataset}/ddRAGEdataset_2_p7_barcodes_1.fastq.gz",
+        p7 = "{dataset}/ddRAGEdataset_2_p7_barcodes_2.fastq.gz",
     output:
-        expand("reads_{barcodes}_{orientation}.fastq.gz", barcodes=p7_barcodes, orientation=(1,2)),
+        expand("{{dataset}}/reads_{barcodes}_{orientation}.fastq.gz", barcodes=p7_barcodes, orientation=(1,2)),
     conda:
         "../../envs/testdata.yaml"
     shell:
-        "split_by_p7_barcode --force {input.p5} {input.p7}"
+        """
+        split_by_p7_barcode --force {input.p5} {input.p7}
+        mv reads_* {wildcards.dataset}
+        """
 
 
 rule remove_annotation:
     input:
-        "reads_{barcode}_{orientation}.fastq.gz",
+        "{dataset}/reads_{barcode}_{orientation}.fastq.gz",
     output:
-        "reads_{barcode}_{orientation}_noheader.fastq.gz",
-        "reads_{barcode}_{orientation}_annotation.txt",
+        "{dataset}/reads_{barcode}_{orientation}_noheader.fastq.gz",
+        "{dataset}/reads_{barcode}_{orientation}_annotation.txt",
     conda:
         "../../envs/testdata.yaml"
     shell:
-        "remove_annotation {input[0]}"
+        """
+        remove_annotation {input[0]}
+        """
 
 
-rule rage:
+rule rage_easy:
     output:
-        expand("raw_dataset/ddRAGEdataset_2_p7_barcodes_{orientation}.fastq.gz", orientation=(1,2)),
-        "raw_dataset/ddRAGEdataset_2_p7_barcodes_barcodes.txt",
-        "raw_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
-        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_annotation.txt",
-        "raw_dataset/logs/ddRAGEdataset_2_p7_barcodes_statstics.pdf",
+        expand("easy_dataset/ddRAGEdataset_2_p7_barcodes_{orientation}.fastq.gz", orientation=(1,2)),
+        "easy_dataset/ddRAGEdataset_2_p7_barcodes_barcodes.txt",
+        "easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+        "easy_dataset/logs/ddRAGEdataset_2_p7_barcodes_annotation.txt",
+        "easy_dataset/logs/ddRAGEdataset_2_p7_barcodes_statstics.pdf",
     params:
         n = 5,  # 5 individuals, this is exactly the number of individuals available in the barcodes file
         l = 100,  # 100 loci
         bc_file = "test_barcodes.txt",  # file with individual information
         event_probs = " ".join([str(p) for p in (0.8, 0.1, 0.1)]),  # probabilities of common, dropout, mutation events
+        mutation_probs = " ".join([str(p) for p in (1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)]),  # probabilities for snp 100%, insertion 0%, deletion 0%, p5 na alternative 0% , p7 na alternative 0%, p5 na dropout 0%, p7 na dropout 0%
+        prob_id = 0.0,
+        prob_seq_error = 0.0,
+        hrl_nr = 0,  # Generate a dataset without hrls
         diversity = 2.0,  # expected nr of aleles per locus
     conda:
         "../../envs/testdata.yaml"
     shell:
-        """
-        rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes --event-probabilities {params.event_probs} --diversity {params.diversity} -z
-        
-        mv $(python -c "import glob;print(sorted(glob.glob('*ddRAGEdataset'))[-1], end='/*')") raw_dataset
-        
-        """
+        "rage -l {params.l} -n {params.n} -b {params.bc_file} --multiple-p7-barcodes "
+        "--diversity {params.diversity} --prob-incomplete-digestion {params.prob_id} "
+        "--event-probabilities {params.event_probs} --mutation-type-probabilities {params.mutation_probs} "
+        "--hrl-number {params.hrl_nr} --no-singletons -e {params.prob_seq_error} "
+        "-o easy_dataset -z"
+
+

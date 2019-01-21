@@ -1,0 +1,94 @@
+"""Use ddRAGE ground truth files to validate the loci assembled by stacks.
+
+Maybe this should be moved into the .test folder.
+"""
+import pandas as pd
+import numpy as np
+import zlib
+
+configfile: "config.yaml"
+
+individuals = pd.read_table("individuals.tsv", dtype=str).set_index("id", drop=False)
+individuals["hash"] = np.arange(len(individuals)) # individuals.id.str.encode("utf-8").apply(zlib.crc32)
+units = pd.read_table("units.tsv", dtype=str).set_index("id", drop=False)
+
+
+rule all:
+    input:
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
+               p=config["params"]["stacks"]),
+        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.yaml",
+               p=config["params"]["stacks"]),
+        "report.txt"
+
+
+rule index_stacks_loci:
+    input:
+        "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.gz"
+    output:
+        fa="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
+        fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai"
+    conda:
+        "../envs/samtools.yaml"
+    shell:
+        """
+        gunzip -k {input}
+        samtools faidx {output.fa}
+        """
+
+
+rule compare_loci:
+    input:
+        fa="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
+        fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
+        vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/populations.snps.vcf",
+        gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+    output:
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml"
+    conda:
+        "../envs/testdata.yaml"
+    params:
+        read_length=config["reads"]["length"],
+        join_seq=config["reads"]["join_seq"],
+    shell:
+        """
+        python scripts/evaluate_stacks_results.py --read-length {params.read_length} --join-seq {params.join_seq} --ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}
+        """
+
+
+rule verify_results:
+    input:
+        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
+        expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
+    output:
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
+    conda:
+        "../envs/testdata.yaml"
+    shell:
+        "python scripts/extract_metrics.py {input.result} {input.expected} > {output}"
+
+
+rule aggregate_results:
+    input:
+        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/result.txt",
+               p=config["params"]["stacks"])
+    output:
+        report="report.txt"
+    run:
+        import os
+        import sys
+        with open(output.report, "w") as report_file:
+            for result in input.results:
+                with open(result, "r") as res_file:
+                    report_file.write(os.path.normpath(result).split(os.sep)[1] + "\n")
+                    report_file.write(res_file.read() + "\n")
+
+
+rule clean:
+    shell:
+        "rm -r calls dedup extracted logs merged stacks trimmed trimmed-spacer trimmed-umi ustacks validation report.txt"
+
+
+include: "../rules/common.smk"
+include: "../rules/preprocessing.smk"
+include: "../rules/stacks.smk"

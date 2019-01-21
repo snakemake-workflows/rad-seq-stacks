@@ -1,0 +1,12 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python >=3.6
+  - ddrage =1.6.3
+  - pysam
+  - biopython
+  - sortedcontainers
+  - pip:
+    - mmh3
+    - recordtype
