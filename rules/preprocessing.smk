@@ -61,7 +61,7 @@ rule generate_consensus_reads:
     log:
         "logs/consensus/{unit}.log"
     shell:
-        "./rbt_release call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
+        "rbt call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
 rule merge_pe_reads:
