@@ -1,5 +1,5 @@
 channels:
   - bioconda
 dependencies:
-  - rust-bio-tools
-  - starcode
+  - rust-bio-tools =0.2.8
+  - starcode =1.3
