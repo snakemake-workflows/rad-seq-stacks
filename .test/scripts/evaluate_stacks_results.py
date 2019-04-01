@@ -75,7 +75,7 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
                 record.found = True
 
     for _, record in sketched_stacks_data:
-        if record.found == False:
+        if record.found is False:
             print("Not found:", record.seq)
     return assembly
 
@@ -102,18 +102,19 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             "Loci": {},
         }
         for (gt_name, gt_seq), (gt_locus, stacks_loci) in assembly.items():
-
             outdata["Loci"][gt_name] = {
                 "ground_truth_seq": gt_seq,
                 "ground_truth_alleles": gt_locus.alleles,
                 "stacks_loci": []
             }
 
-            if len(stacks_loci) > 1:
-                # TODO: This means that more than one stacks lo
-                print("HIT")
-                print(gt_seq)
-                print(stacks_loci)
+            # if len(stacks_loci) > 1:
+            #     # This means that more than one stacks locus associated
+            #     # with the active ground truth locus
+            #     print("HIT")
+            #     print(gt_seq)
+            #     print(stacks_loci)
+
             successfully_detected, successfully_aligned = False, False
             undetected, no_mutations = False, False
 
@@ -167,13 +168,13 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 else:
                     print(f"MISMATCH with {stacks_locus.data[0].chrom}")
                     print(format_alignment(*aln))
-                outdata["Loci"][gt_name]["stacks_loci"].append(stacks_locus_info)
+                outdata["Loci"][gt_name]["stacks_loci"].append(
+                    stacks_locus_info)
 
             if not stacks_loci:
-                # print("      ", "No matching stack locus found", file=outfile)
+                # print("No matching stack locus found", file=outfile)
                 outdata["Loci"][gt_name]["stacks_loci"] = "No matches found"
                 nr_undiscovered_gt_loci += 1
-
 
             if successfully_detected:
                 nr_loci_with_discovered_mutations += 1
@@ -238,7 +239,8 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
             "SNP discovery ratio": nr_loci_with_discovered_mutations / gt_stats.nr_loci_with_muts,
             }
 
-        outfile.write(dump(outdata, default_flow_style=False, Dumper=Dumper, explicit_start=True))
+        outfile.write(dump(outdata, default_flow_style=False, Dumper=Dumper,
+                           explicit_start=True, sort_keys=False))
 
 
 def main(args):
