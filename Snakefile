@@ -13,7 +13,10 @@ units = pd.read_csv("units.tsv", sep="\t", dtype=str).set_index("id", drop=False
 rule all:
     input:
         expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
-               p=config["params"]["stacks"])
+               p=config["params"]["stacks"]),
+        expand(["plots/{unit}.kmer-mapping.svg",
+                "plots/{unit}.classification.svg"],
+               unit=units.id)
 
 
 include: "rules/common.smk"
