@@ -58,7 +58,7 @@ rule compare_loci:
 
 rule verify_results:
     input:
-        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
+        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml",
         expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
     output:
         "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
@@ -70,7 +70,7 @@ rule verify_results:
 
 rule aggregate_results:
     input:
-        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/result.txt",
+        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/result.yaml",
                p=config["params"]["stacks"])
     output:
         report="report.txt"
