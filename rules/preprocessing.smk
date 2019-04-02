@@ -3,9 +3,10 @@ rule barcodes:
     output:
         "barcodes/{unit}.tsv"
     run:
-        d = individuals.loc[individuals.unit == wildcards.unit, ["p5_barcode", "id"]]
-        #d["p7_barcode"] = units.loc[wildcards.unit, "p7_barcode"]
-        d[["p5_barcode", "id"]].to_csv(output[0], index=False, header=None, sep="\t")
+        d = individuals.loc[individuals.unit == wildcards.unit,
+                            ["p5_barcode", "id"]]
+        d[["p5_barcode", "id"]].to_csv(output[0],
+                                       index=False, header=None, sep="\t")
 
 
 rule trim_p7_spacer:
@@ -29,6 +30,25 @@ rule trim_p7_spacer:
         """
 
 
+rule generate_consensus_reads:
+    input:
+        fq1=lambda w: units.loc[w.unit, "fq1"],
+        fq2="trimmed-spacer/{unit}.2.fq.gz",
+    output:
+        fq1="dedup/{unit}.consensus.1.fq.gz",
+        fq2="dedup/{unit}.consensus.2.fq.gz",
+    params:
+        umi=config["umi"]
+    conda:
+        "../envs/consensus.yaml"
+    log:
+        "logs/consensus/{unit}.log"
+    shell:
+        "rbt call-consensus-reads -l {params.umi[len]} "
+        "-d {params.umi[max_dist]} -D {params.umi[max_seq_dist]} "
+        "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
+
+
 # remove dbr from the p7 read after consensus reads have been computed
 rule trim_umi:
     input:
@@ -38,30 +58,11 @@ rule trim_umi:
     conda:
         "../envs/cutadapt.yaml"
     params:
-        dbr="NNNNNNMMGGACG"
+        umi=config["umi"]["pattern"]
     log:
         "logs/trim_umi/{unit}.log"
     shell:
-        "cutadapt -g ^{params.dbr} {input} -o {output} > {log}"
-
-
-rule generate_consensus_reads:
-    input:
-        fq1=lambda w: units.loc[w.unit, "fq1"],
-        fq2="trimmed-spacer/{unit}.2.fq.gz",
-    output:
-        fq1="dedup/{unit}.consensus.1.fq.gz",
-        fq2="dedup/{unit}.consensus.2.fq.gz",
-    params:
-        umi_len=config["params"]["call_consensus_reads"]["umi_len"],
-        max_umi_dist=config["params"]["call_consensus_reads"]["max_umi_dist"],
-        max_seq_dist=config["params"]["call_consensus_reads"]["max_seq_dist"],
-    conda:
-        "../envs/consensus.yaml"
-    log:
-        "logs/consensus/{unit}.log"
-    shell:
-        "rbt call-consensus-reads -l {params.umi_len} -d {params.max_umi_dist} -D {params.max_seq_dist} {input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
+        "cutadapt -g ^{params.umi} {input} -o {output} > {log}"
 
 
 rule merge_pe_reads:
@@ -78,7 +79,9 @@ rule merge_pe_reads:
         padding_quality='H',
         join_seq=config["reads"]["join_seq"]
     shell:
-        "python ../scripts/merge_mates.py {input.fq1}  {input.fq2}  {output.merged} --padding-quality {params.padding_quality} --padding-bases {params.join_seq} > {log}"
+        "python ../scripts/merge_mates.py {input.fq1}  {input.fq2} "
+        "{output.merged} --padding-quality {params.padding_quality} "
+        "--padding-bases {params.join_seq} > {log}"
 
 
 rule extract:
