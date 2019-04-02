@@ -1,4 +1,4 @@
-Haplotypes obtained from Stacks, using the populations_ command.
+Haplotypes obtained from Stacks.
 
 Used parameters:
 
@@ -6,4 +6,3 @@ Used parameters:
 * max_individual_mm (Number of mismatches allowed between stacks): {{ snakemake.wildcards.max_individual_mm }}
 * min_reads (Minimum depth of coverage required to create a stack): {{ snakemake.wildcards.min_reads }}
 
-.. _populations: http://catchenlab.life.illinois.edu/stacks/comp/populations.php
