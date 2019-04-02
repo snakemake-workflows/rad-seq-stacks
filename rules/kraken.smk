@@ -27,7 +27,7 @@ rule kraken_report:
         db=config["params"]["kraken"]["db"]
     output:
         report("tables/{unit}.classification.tsv",
-               caption="../report/kraken.rst", category="classification")
+               caption="../report/kraken.rst", category="QC")
     conda:
         "../envs/kraken.yaml"
     log:
@@ -65,7 +65,7 @@ rule plot_kmer_mapping:
         colormap="kraken/{unit}.colormap.pickle"
     output:
         report("plots/{unit}.kmer-mapping.svg",
-               caption="../report/kmer-mapping.rst", category="K-mer mapping")
+               caption="../report/kmer-mapping.rst", category="QC")
     conda:
         "../envs/eval.yaml"
     script:
@@ -78,7 +78,7 @@ rule plot_classification_tree:
     output:
         report("plots/{unit}.classification.svg",
                caption="../report/classification-tree.rst",
-               category="classification")
+               category="QC")
     conda:
         "../envs/eval.yaml"
     shell:

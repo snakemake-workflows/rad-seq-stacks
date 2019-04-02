@@ -27,6 +27,11 @@ reads:
 # parameters for tools used in the pipeline
 params:
   stacks:
+    # * max_individual_mm: Number of mismatches allowed between stacks
+    # * max_locus_mm: Number of mismatches allowed between sample loci
+    # * min_reads: Minimum depth of coverage required to create a stack
+    #
+    # Expand or shorted the following list to scan desired parameter spaces:
     - max_individual_mm: 4
       max_locus_mm: 4
       min_reads: 3

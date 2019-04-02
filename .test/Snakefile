@@ -8,9 +8,9 @@ import zlib
 
 configfile: "config.yaml"
 
-individuals = pd.read_table("individuals.tsv", dtype=str).set_index("id", drop=False)
+individuals = pd.read_csv("individuals.tsv", dtype=str, sep="\t").set_index("id", drop=False)
 individuals["hash"] = np.arange(len(individuals)) # individuals.id.str.encode("utf-8").apply(zlib.crc32)
-units = pd.read_table("units.tsv", dtype=str).set_index("id", drop=False)
+units = pd.read_csv("units.tsv", dtype=str, sep="\t").set_index("id", drop=False)
 
 
 rule all:

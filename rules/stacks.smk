@@ -52,7 +52,8 @@ rule cstacks:
     log:
         "logs/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
-        "cstacks -p {threads} {params.individuals} -o {params.outdir} 2> {log}"
+        "cstacks -n {wildcards.max_locus_mm} -p {threads} {params.individuals} "
+        "-o {params.outdir} 2> {log}"
 
 
 # search stacks: Search stacks of individuals (from ustacks) against the catalog (from cstacks)
@@ -139,7 +140,15 @@ rule populations:
     input:
         "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls"
     output:
-        "calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/populations.snps.vcf"
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.vcf", type=["snps", "haps"]),
+               caption="../report/calls.rst",
+               category="Populations"),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
+               caption="../report/sumstats.rst",
+               category="Populations"),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["haplotypes", "hapstats"]),
+               caption="../report/haplotypes.rst",
+               category="Populations"),
     params:
         outdir=get_outdir,
         gstacks_dir=lambda w, input: os.path.dirname(input[0])

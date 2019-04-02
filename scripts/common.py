@@ -10,7 +10,7 @@ import math
 
 
 def load_classification_tree(f, min_percentage=0.0, node_fmt="{name} ({perc}%)"):
-    classification = pd.read_table(f, header=None)
+    classification = pd.read_csv(f, header=None, sep="\t")
 
     classification.columns = ["percentage", "n_fragments_covered", "n_fragments_assigned", "code", "taxid", "name"]
     classification.taxid = classification.taxid.astype(str)

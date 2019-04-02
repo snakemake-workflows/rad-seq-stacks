@@ -8,7 +8,7 @@ import numpy as np
 import common
 
 
-d = pd.read_table(snakemake.input.mapping, names=["status", "seqid", "taxid", "seqlen", "kmer_mapping"])
+d = pd.read_csv(snakemake.input.mapping, names=["status", "seqid", "taxid", "seqlen", "kmer_mapping"], sep="\t")
 
 mappings = []
 for i, per_read_mapping in enumerate(d.kmer_mapping.str.split(" ")):
