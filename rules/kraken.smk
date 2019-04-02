@@ -11,7 +11,7 @@ rule kraken:
     threads: 64
     shell:
         """
-        if [ -s {input.reads} ]
+        if [[ -s {input.reads[0]} ]]
         then
             kraken --fastq-input --paired --threads {threads} --db {input.db} \
             {input.reads} > {output} 2> {log}

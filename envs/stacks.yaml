@@ -2,6 +2,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - bioconda::stacks =2.2
+  - stacks =2.2
   - pandas
   - numpy
