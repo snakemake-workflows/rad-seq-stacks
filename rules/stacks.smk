@@ -140,17 +140,17 @@ rule populations:
     input:
         "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls"
     output:
-        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.vcf", type=["snps", "haps"]),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.vcf", type=["snps", "haps"]),
                caption="../report/calls.rst",
                category="Populations"),
-        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
                caption="../report/sumstats.rst",
                category="Populations"),
-        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["haplotypes", "hapstats"]),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.tsv", type=["haplotypes", "hapstats"]),
                caption="../report/haplotypes.rst",
                category="Populations"),
     params:
-        outdir=get_outdir,
+        outdir="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}",
         gstacks_dir=lambda w, input: os.path.dirname(input[0])
     conda:
         "../envs/stacks.yaml"
@@ -158,4 +158,7 @@ rule populations:
     log:
         "logs/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
-        "populations -t {threads} -P {params.gstacks_dir} -O {params.outdir} --vcf > {log}"
+        "mkdir -p {params.outdir}; "
+        "populations -t {threads} -P {params.gstacks_dir} "
+        "-O {params.outdir} --vcf > {log}; "
+        "rename 's!{params.outdir}/!{params.outdir}.!' {params.outdir}/* "

@@ -5,3 +5,4 @@ dependencies:
   - stacks =2.2
   - pandas
   - numpy
+  - rename

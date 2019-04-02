@@ -6,4 +6,4 @@ Used parameters:
 * min_reads (Minimum depth of coverage required to create a stack): {{ snakemake.wildcards.min_reads }}
 
 
-.. _populations:: http://catchenlab.life.illinois.edu/stacks/comp/populations.php
+.. _populations: http://catchenlab.life.illinois.edu/stacks/comp/populations.php

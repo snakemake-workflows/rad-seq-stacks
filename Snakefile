@@ -19,7 +19,7 @@ if kraken_db:
 
 rule all:
     input:
-        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.snps.vcf",
                p=config["params"]["stacks"]),
         kraken_targets
 
