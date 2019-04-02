@@ -49,7 +49,7 @@ rule generate_consensus_reads:
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
-# remove dbr from the p7 read after consensus reads have been computed
+# remove umi from the p7 read after consensus reads have been computed
 rule trim_umi:
     input:
         "dedup/{unit}.consensus.2.fq.gz"
