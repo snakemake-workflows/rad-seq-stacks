@@ -44,6 +44,14 @@ or
 
 See the [Snakemake documentation](https://snakemake.readthedocs.io) for further details.
 
+### Step 4: Create report
+
+To enclose all results in a single, portable HTML report, run
+
+    snakemake --report
+    
+in the working directory.
+
 ## Testing
 
 Tests cases are in the subfolder `.test`. They should be executed via continuous integration with Travis CI.
