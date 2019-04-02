@@ -62,7 +62,7 @@ rule trim_umi:
     log:
         "logs/trim_umi/{unit}.log"
     shell:
-        "cutadapt -g ^{params.umi} {input} -o {output} > {log}"
+        "cutadapt -g ^{params.umi} {input} -o {output} 2> {log}"
 
 
 rule merge_pe_reads:
