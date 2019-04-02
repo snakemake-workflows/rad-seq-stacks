@@ -9,6 +9,7 @@ Insert your code into the respective folders, i.e. `scripts`, `rules`, and `envs
 ## Authors
 
 * Johannes Köster (@johanneskoester)
+* Henning Timm (@HenningTimm)
 
 ## Usage
 
@@ -27,19 +28,19 @@ Configure the workflow according to your needs via editing the file `config.yaml
 
 Test your configuration by performing a dry-run via
 
-    snakemake -n
+    snakemake -n --use-conda
 
 Execute the workflow locally via
 
-    snakemake --cores $N
+    snakemake --cores $N --use-conda
 
 using `$N` cores or run it in a cluster environment via
 
-    snakemake --cluster qsub --jobs 100
+    snakemake --cluster qsub --jobs 100 --use-conda
 
 or
 
-    snakemake --drmaa --jobs 100
+    snakemake --drmaa --jobs 100 --use-conda
 
 See the [Snakemake documentation](https://snakemake.readthedocs.io) for further details.
 
