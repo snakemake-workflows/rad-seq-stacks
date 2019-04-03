@@ -77,12 +77,10 @@ rule merge_pe_reads:
     log:
         "logs/merge/{unit}.log"
     params:
-        padding_quality='H',
+        join_quality='H',
         join_seq=config["reads"]["join_seq"]
-    shell:
-        "python ../scripts/merge_mates.py {input.fq1}  {input.fq2} "
-        "{output.merged} --padding-quality {params.padding_quality} "
-        "--padding-bases {params.join_seq} > {log}"
+    script:
+        "../scripts/merge_mates.py"
 
 
 rule extract:
