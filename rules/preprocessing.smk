@@ -58,11 +58,12 @@ rule trim_umi:
     conda:
         "../envs/cutadapt.yaml"
     params:
-        umi=config["umi"]["pattern"]
+        umi=config["umi"],
+        trim=config["umi"]["len"] + config["restriction-enzyme"]["p7"]["residue-len"]
     log:
         "logs/trim_umi/{unit}.log"
     shell:
-        "cutadapt -g ^{params.umi} {input} -o {output} > {log}"
+        "cutadapt -u {params.trim} {input} -o {output} > {log}"
 
 
 rule merge_pe_reads:

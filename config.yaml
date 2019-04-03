@@ -4,8 +4,12 @@ units: units.tsv
 
 # define the used restriction enzymes
 restriction-enzyme:
-  p5: nsiI
-  p7: csp6I
+  p5:
+    name: nsiI
+    residue-len: 5
+  p7:
+    name: csp6I
+    residue-len: 3
 
 # DBR/UMI handling
 umi:
@@ -15,8 +19,6 @@ umi:
   max_dist: 1
   # maximum hamming distance of read sequence to be considered a duplicate
   max_seq_dist: 2
-  # Expected nucleotide pattern of UMIs
-  pattern: NNNNNNMMGGACG
 
 reads:
   # Expected read length.
