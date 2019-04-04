@@ -7,6 +7,7 @@ from collections import OrderedDict,namedtuple
 
 SNPRecord = namedtuple("SNPRecord", ["orientation", "pos", "ref", "alt"])
 IndelRecord = namedtuple("IndelRecord", ["orientation", "pos", "ref", "alt"])
+Allele = namedtuple("Allele", ["cov", "mutations"])
 
 def get_header(individuals):
     header = [
@@ -47,13 +48,27 @@ def normalize_mutation(mut, offset):
         return IndelRecord(None, None, None, None)
 
 
-def allele_present(individual_alleles):
+def normalize_alleles(individual_alleles, offset):
+    normalized_alleles = dict()
+    for name, allele in individual_alleles.items():
+        normalized_alleles[name] = Allele(
+            allele["cov"],
+            [normalize_mutation(m, offset) for m in allele["mutations"]]
+        )
+    return normalized_alleles
+
+
+def allele_present(individual_alleles, mut):
     """Return a vcf genotype entry:
 
-    
         '.'   if the individual has a dropout at this locus
         '0|0' if the individual is homozygously ref at the locus
-        '1|1' if the individual is 
+        '1|1' if the individual is either homozygously mutated or
+              heterozygously mutated on both alleles
+        '0|1' if the individual is heterozygously mutated on one allele
+
+    NOTE:
+        This does not work with different mutations of the same position yet.
     """
     if len(individual_alleles) == 0:
         # dropout
@@ -68,12 +83,28 @@ def allele_present(individual_alleles):
             return "1|1"
 
     elif len(individual_alleles) == 2:
+
         if 0 in individual_alleles:
             # heterozygous mutated variant with reference
             return "0|1"
         else:
-            # heterozygous mutated variant with two non ref alleles
-            return "1|1"
+            # find out on which allele this variant is present
+            on_first, on_second = (0, 0)
+            for nr, allele in enumerate(individual_alleles.values()):
+                for m in allele.mutations:
+                    if mut.pos == m.pos:
+                        # a mutation of the active position was found,
+                        # now check, whether on the first or on the second
+                        # allele
+                        if nr == 0:
+                            on_first = 1
+                        elif nr == 1:
+                            on_second = 1
+                        else:
+                            # simulated genomes are diploid
+                            raise ValueError()
+            return f"{on_first}|{on_second}"
+
     else:
         print("This should never happen")
         print(individual_alleles)
@@ -107,25 +138,31 @@ def generate_records(locus, individuals, chrom):
         )
 
     # TODO: make sure that there is no position with two different alt bases
+    # right now, these are not handled properly
+    #
     # create one record for each mutation,
     # i.e. each variant at each mutated position
     for mut in normalized_mutations:
-
+        
         # per mutated pos -> record
         # round allele frequencies
         info["AF"] = [round(val, 3) for val in locus["allele frequencies"].values()]
+        # coverage of the variant site is the sum of all reads
+        # of all individuals
         info["DP"] = sum(locus["allele coverages"].values())
 
         # check for each individual, if the reference base
         # or another base is present at this location
         for ind in individuals:
             individual_calls = OrderedDict()
-            individual_alleles = locus["individuals"][ind]
+            individual_alleles = normalize_alleles(locus["individuals"][ind], offset)
+            # coverage for the individual is ths sum of all reads coveraging
+            # the site
             individual_calls["DP"] = sum(
-                (i["cov"] for i in individual_alleles.values())
+                (i.cov for i in individual_alleles.values())
             )
-
-            individual_calls["GT"] = allele_present(individual_alleles)
+            # get call strings
+            individual_calls["GT"] = allele_present(individual_alleles, mut)
 
             # TODO: handle different variants of the same base on
             # different alleles => REF = A, ALT = C,T, GT= 0|1|2
@@ -134,10 +171,10 @@ def generate_records(locus, individuals, chrom):
         records.append(
             vcfpy.record.Record(
                 CHROM=chrom,
-                POS=42,
+                POS=mut.pos,
                 ID=[""],
-                REF="A",
-                ALT=[vcfpy.Substitution("SNP", "T")],
+                REF=mut.ref,
+                ALT=[vcfpy.Substitution("SNP", mut.alt)],
                 QUAL=60,
                 FILTER=[],
                 INFO=info,
@@ -148,7 +185,8 @@ def generate_records(locus, individuals, chrom):
     return records
 
 
-def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN", out_path="test.vcf"):
+def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN",
+                       out_path="test.vcf"):
     """TODO
     """
     with open(yaml_path, 'r') as stream:
@@ -182,7 +220,7 @@ def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN", out_path="t
             chrom = name.split()[1]
 
             records = generate_records(locus, individuals, chrom)
-            print("\n".join(map(str, records)))
+            # print("\n".join(map(str, records)))
             for record in records:
                 writer.write_record(record)
 
