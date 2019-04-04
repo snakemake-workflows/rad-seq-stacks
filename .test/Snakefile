@@ -41,7 +41,7 @@ rule compare_loci:
     input:
         fa="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
         fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
-        vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/populations.snps.vcf",
+        vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
         gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
     output:
         "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml"
