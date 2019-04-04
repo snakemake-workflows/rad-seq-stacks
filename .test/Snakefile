@@ -15,9 +15,9 @@ units = pd.read_csv("units.tsv", dtype=str, sep="\t").set_index("id", drop=False
 
 rule all:
     input:
-        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.snps.vcf",
                p=config["params"]["stacks"]),
-        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.yaml",
+        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.validation.yaml",
                p=config["params"]["stacks"]),
         "report.txt"
 
@@ -44,7 +44,7 @@ rule compare_loci:
         vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
         gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml"
     conda:
         "../envs/testdata.yaml"
     params:
@@ -58,10 +58,10 @@ rule compare_loci:
 
 rule verify_results:
     input:
-        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml",
+        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml",
         expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.result.yaml"
     conda:
         "../envs/testdata.yaml"
     shell:
@@ -70,7 +70,7 @@ rule verify_results:
 
 rule aggregate_results:
     input:
-        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/result.yaml",
+        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.result.yaml",
                p=config["params"]["stacks"])
     output:
         report="report.txt"
