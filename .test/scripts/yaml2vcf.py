@@ -1,8 +1,12 @@
 import vcfpy
 import yaml
 import io
-from collections import OrderedDict
 
+from collections import OrderedDict,namedtuple
+
+
+SNPRecord = namedtuple("SNPRecord", ["orientation", "pos", "ref", "alt"])
+IndelRecord = namedtuple("IndelRecord", ["orientation", "pos", "ref", "alt"])
 
 def get_header(individuals):
     header = [
@@ -36,29 +40,117 @@ def normalize_mutation(mut, offset):
             orientation = "p7"
         else:
             orientation = "p5"
-        return ("SNP", (orientation, snp_pos, (base_from, base_to)))
+        # return ("SNP", (orientation, snp_pos, (base_from, base_to)))
+        return SNPRecord(orientation, snp_pos, base_from, base_to)
     else:
-        return "Indel", None
+        # WARNING not implemented yet
+        return IndelRecord(None, None, None, None)
 
 
-def process_mutations(mutations):
-    """Pack mutations into a dict
+def allele_present(individual_alleles):
+    """Return a vcf genotype entry:
+
+    
+        '.'   if the individual has a dropout at this locus
+        '0|0' if the individual is homozygously ref at the locus
+        '1|1' if the individual is 
     """
-    processed_mutations = []
+    if len(individual_alleles) == 0:
+        # dropout
+        return "."
 
-    for mutation in mutations:
-        (_, (orientation, pos, (ref, alt))) = mutation
-        processed_mutations.append({
-            "orientation": orientation,
-            "pos": pos,
-            "ref": ref,
-            "alt": alt,
-        })
-    return processed_mutations
+    elif len(individual_alleles) == 1:
+        if 0 in individual_alleles:
+            # homozygous reference variant
+            return "0|0"
+        else:
+            # homozygous mutated variant
+            return "1|1"
+
+    elif len(individual_alleles) == 2:
+        if 0 in individual_alleles:
+            # heterozygous mutated variant with reference
+            return "0|1"
+        else:
+            # heterozygous mutated variant with two non ref alleles
+            return "1|1"
+    else:
+        print("This should never happen")
+        print(individual_alleles)
+        raise ValueError
+
+
+def generate_records(locus, individuals, chrom):
+    records = []
+    offset = 100  # KLUDGE
+
+    for allele in locus["allele coverages"].keys():
+        if allele == 0:
+            continue
+        locus_calls = []
+        info = OrderedDict()
+
+        # collect all mutated positions
+        all_mutations = set()
+        for ind in individuals:
+            for allele in locus["individuals"][ind].values():
+                all_mutations.update(allele["mutations"])
+
+        # normalize them and sort them by position in merged read
+        # this is rad seq stacks specific
+        normalized_mutations = sorted(
+            [
+                normalize_mutation(a, offset)
+                for a in all_mutations
+            ],
+            key=lambda mut: mut.pos,
+        )
+
+    # TODO: make sure that there is no position with two different alt bases
+    # create one record for each mutation,
+    # i.e. each variant at each mutated position
+    for mut in normalized_mutations:
+
+        # per mutated pos -> record
+        # round allele frequencies
+        info["AF"] = [round(val, 3) for val in locus["allele frequencies"].values()]
+        info["DP"] = sum(locus["allele coverages"].values())
+
+        # check for each individual, if the reference base
+        # or another base is present at this location
+        for ind in individuals:
+            individual_calls = OrderedDict()
+            individual_alleles = locus["individuals"][ind]
+            individual_calls["DP"] = sum(
+                (i["cov"] for i in individual_alleles.values())
+            )
+
+            individual_calls["GT"] = allele_present(individual_alleles)
+
+            # TODO: handle different variants of the same base on
+            # different alleles => REF = A, ALT = C,T, GT= 0|1|2
+            locus_calls.append(vcfpy.Call(ind, individual_calls))
+
+        records.append(
+            vcfpy.record.Record(
+                CHROM=chrom,
+                POS=42,
+                ID=[""],
+                REF="A",
+                ALT=[vcfpy.Substitution("SNP", "T")],
+                QUAL=60,
+                FILTER=[],
+                INFO=info,
+                FORMAT=["GT", "DP"],
+                calls=locus_calls
+            )
+        )
+    return records
 
 
 def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN", out_path="test.vcf"):
-    
+    """TODO
+    """
     with open(yaml_path, 'r') as stream:
         try:
             # read all documents in the data
@@ -88,80 +180,10 @@ def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN", out_path="t
     with vcfpy.Writer.from_path(out_path, reader.header) as writer:
         for name, locus in loci_with_snps:
             chrom = name.split()[1]
-            
-            for allele in locus["allele coverages"].keys():
-                if allele == 0:
-                    continue
-                locus_calls = []
-                info = OrderedDict()
 
-                # collect all mutated positions
-                all_mutations = set()
-                for ind in individuals:
-                    for allele in locus["individuals"][ind].values():
-                        all_mutations.update(allele["mutations"])
-
-                # normalize them and sort them by position in merged read
-                # this is rad seq stacks specific
-                normalized_mutations = sorted(
-                    [
-                        normalize_mutation(a, 100)
-                        for a in all_mutations
-                    ],
-                    key=lambda x: (x[1][0], x[1][1]),
-                )
-
-                for ind in individuals:
-                    individual_calls = OrderedDict()
-                    individual_alleles = locus["individuals"][ind]
-                    individual_calls["DP"] = sum((i["cov"] for i in individual_alleles.values()))
-
-                    if len(individual_alleles) == 0:
-                        # dropout
-                        individual_calls["GT"] = "."
-
-                    elif len(individual_alleles) == 1:
-                        if 0 in individual_alleles:
-                            # homozygous reference variant
-                            individual_calls["GT"] = "0|0"
-                        else:
-                            # homozygous mutated variant
-                            individual_calls["GT"] = "1|1"
-
-                    elif len(individual_alleles) == 2:
-                        if 0 in individual_alleles:
-                            # heterozygous mutated variant with reference
-                            individual_calls["GT"] = "0|1"
-                        else:
-                            # heterozygous mutated variant with two non ref alleles
-                            individual_calls["GT"] = "1|1"
-                    else:
-                        print("This should never happen")
-                        print(individual_alleles)
-                        raise ValueError
-
-                    # TODO: handle different variants of the same base on
-                    # different alleles => REF = A, ALT = C,T, GT= 0|1|2
-                    locus_calls.append(vcfpy.Call(ind, individual_calls))
-
-                # round allele frequencies
-                info["AF"] = [round(val, 3) for val in locus["allele frequencies"].values()]
-                info["DP"] = sum(locus["allele coverages"].values())
-                
-                # TODO create one record for every allele?
-                
-                record = vcfpy.record.Record(
-                    CHROM=chrom,
-                    POS=42,
-                    ID=[""],
-                    REF="A",
-                    ALT=[vcfpy.Substitution("SNP", "T")],
-                    QUAL=60,
-                    FILTER=[],
-                    INFO=info,
-                    FORMAT=["GT", "DP"],
-                    calls=locus_calls
-                )
+            records = generate_records(locus, individuals, chrom)
+            print("\n".join(map(str, records)))
+            for record in records:
                 writer.write_record(record)
 
 
@@ -173,49 +195,48 @@ if __name__ == '__main__':
     main()
 
 
-  # Locus 75:
-  # allele coverages:
-  #   0: 86
-  #   2: 14
-  #   3: 31
-  # allele frequencies:
-  #   0: 0.625
-  #   2: 0.125
-  #   3: 0.25
-  # coverage: 131
-  # id reads: 0
-  # individuals:
-  #   I1:
-  #     0:
-  #       cov: 15
-  #       mutations: [] "0|0"
-  #     3:
-  #       cov: 9
-  #       mutations:
-  #       - p5@81:G>T  "0|1"
-  #       - p7@45:G>A  "0|1"
-  #       - p7@65:C>T  "0|1"
-  #   I2:
-  #     0:
-  #       cov: 38
-  #       mutations: [] "0|0"
-  #   I3: {}            "."
-  #   I4:
-  #     0:
-  #       cov: 33
-  #       mutations: [] "0|0"
-  #   I5:
-  #     2:
-  #       cov: 14
-  #       mutations:
-  #       - p7@45:G>A
-  #       - p7@65:C>T
-  #     3:
-  #       cov: 22
-  #       mutations:
-  #       - p5@81:G>T "0|1"
-  #       - p7@45:G>A "1|1"
-  #       - p7@65:C>T "1|1"
-  # p5 seq: ATCAGTGCTATGCAGAAGTAGGGTAACAGGCCCTAACATACGCTTACAGATGGTCCTGGTATAGCGCACATGATTATCCCTGGGACGAC
-  # p7 seq: ACTTGTGACAGTTTAGACCATACGCAAGAGTTAGTGTCCGAATTTGTAACGCCTTCGTGTAATGGCGATCTCCTGATCTAGCAA
-
+# Locus 75:
+# allele coverages:
+#   0: 86
+#   2: 14
+#   3: 31
+# allele frequencies:
+#   0: 0.625
+#   2: 0.125
+#   3: 0.25
+# coverage: 131
+# id reads: 0
+# individuals:
+#   I1:
+#     0:
+#       cov: 15
+#       mutations: [] "0|0"
+#     3:
+#       cov: 9
+#       mutations:
+#       - p5@81:G>T  "0|1"
+#       - p7@45:G>A  "0|1"
+#       - p7@65:C>T  "0|1"
+#   I2:
+#     0:
+#       cov: 38
+#       mutations: [] "0|0"
+#   I3: {}            "."
+#   I4:
+#     0:
+#       cov: 33
+#       mutations: [] "0|0"
+#   I5:
+#     2:
+#       cov: 14
+#       mutations:
+#       - p7@45:G>A
+#       - p7@65:C>T
+#     3:
+#       cov: 22
+#       mutations:
+#       - p5@81:G>T "0|1"
+#       - p7@45:G>A "1|1"
+#       - p7@65:C>T "1|1"
+# p5 seq: ATCAGTGCTATGCAGAAGTAGGGTAACAGGCCCTAACATACGCTTACAGATGGTCCTGGTATAGCGCACATGATTATCCCTGGGACGAC
+# p7 seq: ACTTGTGACAGTTTAGACCATACGCAAGAGTTAGTGTCCGAATTTGTAACGCCTTCGTGTAATGGCGATCTCCTGATCTAGCAA
