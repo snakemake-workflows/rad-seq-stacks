@@ -1,23 +1,29 @@
 import vcfpy
 import yaml
 import io
+import datetime
 
-from collections import OrderedDict,namedtuple
+from collections import OrderedDict, namedtuple, defaultdict
 
 
 SNPRecord = namedtuple("SNPRecord", ["orientation", "pos", "ref", "alt"])
 IndelRecord = namedtuple("IndelRecord", ["orientation", "pos", "ref", "alt"])
 Allele = namedtuple("Allele", ["cov", "mutations"])
 
+
 def get_header(individuals):
+    time = datetime.datetime.now()
     header = [
         '##fileformat=VCFv4.3',
-        '##fileDate={}'.format("TODAY"),
-        '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
-        '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">',
+        f'##fileDate={time.year}{time.month:0>2}{time.day:0>2}',
         '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">',
+        '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">',
+        '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">',
+        '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allele Depth">',
+        '##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood">',
+        '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">',
         '#' + "\t".join(["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"] + individuals),
         ]
     return io.StringIO("\n".join(header))
@@ -80,7 +86,13 @@ def allele_present(individual_alleles, mut):
             return "0|0"
         else:
             # homozygous mutated variant
-            return "1|1"
+            # check if the homozygous variant is the one in question
+            for allele in individual_alleles.values():
+                for m in allele.mutations:
+                    if mut.pos == m.pos:
+                        return "1|1"
+            # if this is reached, the mutation in question was not present
+            return "0|0"
 
     elif len(individual_alleles) == 2:
 
@@ -112,50 +124,81 @@ def allele_present(individual_alleles, mut):
 
 
 def generate_records(locus, individuals, chrom):
+    # print("\n\n", chrom)
     records = []
     offset = 100  # KLUDGE
 
-    for allele in locus["allele coverages"].keys():
+    mutation_allele_frequencies = dict()
+    mutation_sample_count = defaultdict(set)
+
+    # assemble normalized and sorted list of mutations, each of which
+    # will later receive one record in the VCF file
+    # additionally, create a dictionary that maps mutations to their
+    # allele frequency: the sum of all alleles with this specific mutation
+    for allele, frequency in locus["allele frequencies"].items():
+        # print("allele", allele)
         if allele == 0:
+            # skip reference alleles
             continue
-        locus_calls = []
-        info = OrderedDict()
+        else:
+            # collect all mutated positions
+            all_mutations = set()
+            for ind in individuals:
+                mutations_per_individual = set()
+                try:
+                    mutations_per_individual.update(locus["individuals"][ind][allele]["mutations"])
+                    # print(mutations_per_individual)
+                    for m in mutations_per_individual:
+                        mutation_sample_count[normalize_mutation(m, offset)].add(ind)
+                    all_mutations.update(mutations_per_individual)
+                except KeyError:
+                    # this allele is not present in this individual
+                    ...
 
-        # collect all mutated positions
-        all_mutations = set()
-        for ind in individuals:
-            for allele in locus["individuals"][ind].values():
-                all_mutations.update(allele["mutations"])
+            # normalize them and sort them by position in merged read
+            # this is rad seq stacks specific
+            normalized_mutations = sorted(
+                [
+                    normalize_mutation(a, offset)
+                    for a in all_mutations
+                ],
+                key=lambda mut: mut.pos,
+            )
 
-        # normalize them and sort them by position in merged read
-        # this is rad seq stacks specific
-        normalized_mutations = sorted(
-            [
-                normalize_mutation(a, offset)
-                for a in all_mutations
-            ],
-            key=lambda mut: mut.pos,
-        )
+            for mut in normalized_mutations:
+                if mut in mutation_allele_frequencies:
+                    mutation_allele_frequencies[mut] += frequency
+                else:
+                    mutation_allele_frequencies[mut] = frequency
 
+    # print("msc", mutation_sample_count)
     # TODO: make sure that there is no position with two different alt bases
     # right now, these are not handled properly
     #
     # create one record for each mutation,
     # i.e. each variant at each mutated position
+    # print("norm mut", normalized_mutations)
     for mut in normalized_mutations:
-        
+        info = OrderedDict()
+        locus_calls = []
+        # print(f"looking for {mut}")
         # per mutated pos -> record
+
         # round allele frequencies
-        info["AF"] = [round(val, 3) for val in locus["allele frequencies"].values()]
+        info["AF"] = [round(mutation_allele_frequencies[mut], 3)]
         # coverage of the variant site is the sum of all reads
         # of all individuals
         info["DP"] = sum(locus["allele coverages"].values())
+        # number of samples with mutation
+        info["NS"] = len(mutation_sample_count[mut])
 
         # check for each individual, if the reference base
         # or another base is present at this location
         for ind in individuals:
             individual_calls = OrderedDict()
-            individual_alleles = normalize_alleles(locus["individuals"][ind], offset)
+            individual_alleles = normalize_alleles(locus["individuals"][ind],
+                                                   offset)
+            # print(f"norm individual alleles for {ind}", individual_alleles)
             # coverage for the individual is ths sum of all reads coveraging
             # the site
             individual_calls["DP"] = sum(
@@ -163,24 +206,26 @@ def generate_records(locus, individuals, chrom):
             )
             # get call strings
             individual_calls["GT"] = allele_present(individual_alleles, mut)
-
+            # print(individual_calls["GT"])
             # TODO: handle different variants of the same base on
             # different alleles => REF = A, ALT = C,T, GT= 0|1|2
             locus_calls.append(vcfpy.Call(ind, individual_calls))
 
-        records.append(
-            vcfpy.record.Record(
+        rec = vcfpy.record.Record(
                 CHROM=chrom,
                 POS=mut.pos,
                 ID=[""],
                 REF=mut.ref,
                 ALT=[vcfpy.Substitution("SNP", mut.alt)],
-                QUAL=60,
-                FILTER=[],
+                QUAL="",
+                FILTER=["PASS"],
                 INFO=info,
                 FORMAT=["GT", "DP"],
                 calls=locus_calls
             )
+        # print("Record:", rec)
+        records.append(
+            rec
         )
     return records
 
