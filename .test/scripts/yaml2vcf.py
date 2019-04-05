@@ -171,6 +171,13 @@ def generate_records(locus, individuals, chrom):
                 else:
                     mutation_allele_frequencies[mut] = frequency
 
+
+x    # individual_allele_coverage = dict()
+    # for ind_name, alleles in locus["individuals"].items():
+    #     for name, allele in alleles.items():
+    #         for mut in allele["mutations"]:
+    #             individual_allele_coverage[ind_name, normalize_mutation(mut, offset)] = allele["cov"]
+    
     # print("msc", mutation_sample_count)
     # TODO: make sure that there is no position with two different alt bases
     # right now, these are not handled properly
@@ -207,6 +214,13 @@ def generate_records(locus, individuals, chrom):
             # get call strings
             individual_calls["GT"] = allele_present(individual_alleles, mut)
             # print(individual_calls["GT"])
+
+            # TODO: unclear how this should should be filled.
+            # try:
+            #     individual_calls["AD"] = individual_allele_coverage[(ind, mut)]
+            # except KeyError:
+            #     print(individual_allele_coverage)
+            #     raise
             # TODO: handle different variants of the same base on
             # different alleles => REF = A, ALT = C,T, GT= 0|1|2
             locus_calls.append(vcfpy.Call(ind, individual_calls))
