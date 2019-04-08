@@ -10,6 +10,8 @@ import io
 import datetime
 import sys
 
+import click
+
 from collections import OrderedDict, namedtuple, defaultdict
 
 
@@ -304,12 +306,30 @@ def parse_rage_gt_file(yaml_path, read_length, join_seq, out_path):
                 writer.write_record(record)
 
 
-def main():
-    yaml_path = "../data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml"
-    read_length = 100
-    join_seq = "NNNNN"
-    out_path = "test.vcf"
-    parse_rage_gt_file(yaml_path, read_length, join_seq, out_path)
+def main_snakemake():
+    """Main function to be called by a snakemake script."""
+    parse_rage_gt_file(
+        yaml_path=snakemake.input.yaml,  # noqa: F821
+        read_length=snakemake.params.read_length,  # noqa: F821
+        join_seq=snakemake.params.read_length,  # noqa: F821
+        out_path=snakemake.output.vcf,  # noqa: F821
+    )
+
+
+@click.command(help="Convert a given ddRAGE ground truth yaml_file"
+               "to a vcf file."
+               "Requires the length of the reads simulated in the data set"
+               "and the sequence used to join the paired end reads.\n\n"
+               "Example (reads of length 100, joined by NNNNN):\n\n"
+               "python yaml2vcf.py my_dataset_gt.yaml "
+               "my_vcf_output.vcf 100 NNNNN")
+@click.argument('yaml_path', type=click.Path(exists=True))
+@click.argument('vcf_path', type=click.Path())
+@click.argument('read_length', type=int)
+@click.argument('join_seq', type=str)
+def main(yaml_path, vcf_path, read_length, join_seq, ):
+    """Main function for commnd line interaction."""
+    parse_rage_gt_file(yaml_path, read_length, join_seq, vcf_path)
 
 
 if __name__ == '__main__':
