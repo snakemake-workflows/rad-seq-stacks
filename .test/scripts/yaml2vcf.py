@@ -271,7 +271,7 @@ def parse_rage_gt_file(yaml_path, read_length, join_seq, out_path):
     with open(yaml_path, 'r') as stream:
         try:
             # read all documents in the data
-            inds, loci, *other = list(yaml.load_all(stream))
+            inds, loci, *other = list(yaml.load_all(stream, Loader=yaml.FullLoader))
         except yaml.YAMLError as exc:
             print(exc)
 
@@ -306,16 +306,6 @@ def parse_rage_gt_file(yaml_path, read_length, join_seq, out_path):
                 writer.write_record(record)
 
 
-def main_snakemake():
-    """Main function to be called by a snakemake script."""
-    parse_rage_gt_file(
-        yaml_path=snakemake.input.yaml,  # noqa: F821
-        read_length=snakemake.params.read_length,  # noqa: F821
-        join_seq=snakemake.params.read_length,  # noqa: F821
-        out_path=snakemake.output.vcf,  # noqa: F821
-    )
-
-
 @click.command(help="Convert a given ddRAGE ground truth yaml_file"
                "to a vcf file."
                "Requires the length of the reads simulated in the data set"
@@ -333,4 +323,12 @@ def main(yaml_path, vcf_path, read_length, join_seq, ):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        parse_rage_gt_file(
+            yaml_path=snakemake.input.yaml,  # noqa: F821
+            read_length=snakemake.params.read_length,  # noqa: F821
+            join_seq=snakemake.params.join_seq,  # noqa: F821
+            out_path=snakemake.output.vcf,  # noqa: F821
+        )
+    except NameError:
+        main()

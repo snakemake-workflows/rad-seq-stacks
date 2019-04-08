@@ -19,6 +19,7 @@ rule all:
                p=config["params"]["stacks"]),
         expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.validation.yaml",
                p=config["params"]["stacks"]),
+        "validation/ground_truth.vcf",
         "report.txt"
 
 
@@ -82,6 +83,20 @@ rule aggregate_results:
                 with open(result, "r") as res_file:
                     report_file.write(os.path.normpath(result).split(os.sep)[1] + "\n")
                     report_file.write(res_file.read() + "\n")
+
+
+rule yaml2vcf:
+    input:
+        yaml="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+    output:
+        vcf="validation/ground_truth.vcf",
+    params:
+        read_length=100,
+        join_seq="NNNNN",
+    conda:
+        "../envs/testdata.yaml"
+    script:
+        "scripts/yaml2vcf.py"
 
 
 rule clean:
