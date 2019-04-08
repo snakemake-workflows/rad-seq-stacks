@@ -9,7 +9,6 @@ dependencies:
   - sortedcontainers
   - pyyaml >=5.0
   - vcfpy
-  - click
   - pip:
     - mmh3
     - recordtype
