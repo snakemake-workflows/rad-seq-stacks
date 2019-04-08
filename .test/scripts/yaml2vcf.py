@@ -1,7 +1,14 @@
+"""Translate a ddRAGE ground truth YAML file into vcf format.
+
+This workflow is adapted to the rad-seq-stacks pipeline and
+uses assumptions specific to this pipeline, most notably
+that p5 and p7 reads are concatenated before analysis.
+"""
 import vcfpy
 import yaml
 import io
 import datetime
+import sys
 
 from collections import OrderedDict, namedtuple, defaultdict
 
@@ -12,29 +19,36 @@ Allele = namedtuple("Allele", ["cov", "mutations"])
 
 
 def get_header(individuals):
+    """Format a VCF header, including individual names and the current date."""
     time = datetime.datetime.now()
     header = [
         '##fileformat=VCFv4.3',
         f'##fileDate={time.year}{time.month:0>2}{time.day:0>2}',
         '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">',
         '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">',
-        '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+        '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples '
+        'With Data">',
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">',
         '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allele Depth">',
-        '##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood">',
-        '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">',
-        '#' + "\t".join(["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"] + individuals),
+        '##FORMAT=<ID=GL,Number=G,Type=Float,Description='
+        '"Genotype Likelihood">',
+        '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description='
+        '"Genotype Quality">',
+        '#' + "\t".join(["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
+                         "INFO", "FORMAT"] + individuals),
         ]
     return io.StringIO("\n".join(header))
 
 
-def normalize_mutation(mut, offset):
-    """Normalize SNPs and call mutation type.
+def parse_mutation(mut, offset):
+    """Parse a ddRAGE mutation into a SNPRecord object.
+
+    If a mutation falls on the p7 read, add the offset so that this works
+    with concatenated reads.
 
     Returns:
-        tuple: Type ("SNP" or "Indel") and (base_from, base_to) for SNPs,
-        None for indels
+        NamedTuple (SNPRecord or IndelRecord)
     """
     pos_str, mut_str = mut.split(":")
     read, pos = pos_str.split("@")
@@ -47,19 +61,19 @@ def normalize_mutation(mut, offset):
             orientation = "p7"
         else:
             orientation = "p5"
-        # return ("SNP", (orientation, snp_pos, (base_from, base_to)))
         return SNPRecord(orientation, snp_pos, base_from, base_to)
     else:
         # WARNING not implemented yet
         return IndelRecord(None, None, None, None)
 
 
-def normalize_alleles(individual_alleles, offset):
+def parse_alleles(individual_alleles, offset):
+    """Parse all mutations of the alleles."""
     normalized_alleles = dict()
     for name, allele in individual_alleles.items():
         normalized_alleles[name] = Allele(
             allele["cov"],
-            [normalize_mutation(m, offset) for m in allele["mutations"]]
+            [parse_mutation(m, offset) for m in allele["mutations"]]
         )
     return normalized_alleles
 
@@ -118,15 +132,16 @@ def allele_present(individual_alleles, mut):
             return f"{on_first}|{on_second}"
 
     else:
-        print("This should never happen")
-        print(individual_alleles)
+        print("Invalid number of individual alleles. "
+              "No individual should have more than two alleles!",
+              file=sys.stderr)
+        print("Alleles dictionary:", individual_alleles, file=sys.stderr)
         raise ValueError
 
 
-def generate_records(locus, individuals, chrom):
-    # print("\n\n", chrom)
+def generate_records(locus, individuals, chrom, offset):
+    """Generate VCF records for all mutations of the given locus."""
     records = []
-    offset = 100  # KLUDGE
 
     mutation_allele_frequencies = dict()
     mutation_sample_count = defaultdict(set)
@@ -146,10 +161,12 @@ def generate_records(locus, individuals, chrom):
             for ind in individuals:
                 mutations_per_individual = set()
                 try:
-                    mutations_per_individual.update(locus["individuals"][ind][allele]["mutations"])
+                    mutations_per_individual.update(
+                        locus["individuals"][ind][allele]["mutations"])
                     # print(mutations_per_individual)
                     for m in mutations_per_individual:
-                        mutation_sample_count[normalize_mutation(m, offset)].add(ind)
+                        mutation_sample_count[parse_mutation(m, offset)].add
+                        (ind)
                     all_mutations.update(mutations_per_individual)
                 except KeyError:
                     # this allele is not present in this individual
@@ -159,7 +176,7 @@ def generate_records(locus, individuals, chrom):
             # this is rad seq stacks specific
             normalized_mutations = sorted(
                 [
-                    normalize_mutation(a, offset)
+                    parse_mutation(a, offset)
                     for a in all_mutations
                 ],
                 key=lambda mut: mut.pos,
@@ -171,13 +188,12 @@ def generate_records(locus, individuals, chrom):
                 else:
                     mutation_allele_frequencies[mut] = frequency
 
-
-x    # individual_allele_coverage = dict()
+    # individual_allele_coverage = dict()
     # for ind_name, alleles in locus["individuals"].items():
     #     for name, allele in alleles.items():
     #         for mut in allele["mutations"]:
-    #             individual_allele_coverage[ind_name, normalize_mutation(mut, offset)] = allele["cov"]
-    
+    #             individual_allele_coverage[ind_name, parse_mutation(mut, offset)] = allele["cov"]
+
     # print("msc", mutation_sample_count)
     # TODO: make sure that there is no position with two different alt bases
     # right now, these are not handled properly
@@ -203,8 +219,8 @@ x    # individual_allele_coverage = dict()
         # or another base is present at this location
         for ind in individuals:
             individual_calls = OrderedDict()
-            individual_alleles = normalize_alleles(locus["individuals"][ind],
-                                                   offset)
+            individual_alleles = parse_alleles(locus["individuals"][ind],
+                                               offset)
             # print(f"norm individual alleles for {ind}", individual_alleles)
             # coverage for the individual is ths sum of all reads coveraging
             # the site
@@ -244,10 +260,12 @@ x    # individual_allele_coverage = dict()
     return records
 
 
-def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN",
-                       out_path="test.vcf"):
-    """TODO
+def parse_rage_gt_file(yaml_path, read_length, join_seq, out_path):
+    """Create a VCF file that contains one record for each mutation simulated
+    by ddRAGE. Loci with multiple simulated mutations receive multiple lines.
     """
+    # Read ground truth file. Skip HRL reads and singletons after
+    # the loci, if those are present.
     with open(yaml_path, 'r') as stream:
         try:
             # read all documents in the data
@@ -255,13 +273,14 @@ def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN",
         except yaml.YAMLError as exc:
             print(exc)
 
-    p5_enz = list(inds["Individual Information"].values())[0]["p5 overhang"]
-    loc_seqs = []
     # filter out all loci with only one allele, i.e. all unmutated loci
     loci_with_snps = ((n, l) for (n, l) in loci.items()
                       if len(l["allele coverages"]) > 1)
 
-    # print("inds", inds)
+    # Compute the offset for mutations on the concatenated p7 read.
+    # The added length is the total simulated read size minus the shortest
+    # possible adapter sequence (i.e. the longest possible genomic sequence)
+    # plus the length of the sequence of 'N's used to join the p5 and p7 reads.
     spacer_lengths = [len(i["p5 spacer"]) for i
                       in inds["Individual Information"].values()]
     overhang_lengths = [len(i["p5 overhang"]) for i
@@ -269,71 +288,29 @@ def parse_rage_gt_file(yaml_path, read_length=100, join_seq="NNNNN",
     offset = read_length - (min(spacer_lengths) + min(overhang_lengths)) \
         + len(join_seq)
 
-    # Assemble header from individual name list
+    # Assemble VCF header from individual name list
     individuals = [str(i) for i in inds["Individual Information"].keys()]
     reader = vcfpy.Reader.from_stream(
         get_header(individuals))
 
+    # Iterate through all ddRAGE loci and create a VCF record for each
+    # simulated mutation
     with vcfpy.Writer.from_path(out_path, reader.header) as writer:
         for name, locus in loci_with_snps:
+            # Get the locus number, by splitting off the leading 'Locus'
             chrom = name.split()[1]
-
-            records = generate_records(locus, individuals, chrom)
-            # print("\n".join(map(str, records)))
-            for record in records:
+            # build VCF records and write them to file
+            for record in generate_records(locus, individuals, chrom, offset):
                 writer.write_record(record)
 
 
 def main():
-    parse_rage_gt_file(yaml_path="../data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml")
+    yaml_path = "../data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml"
+    read_length = 100
+    join_seq = "NNNNN"
+    out_path = "test.vcf"
+    parse_rage_gt_file(yaml_path, read_length, join_seq, out_path)
 
 
 if __name__ == '__main__':
     main()
-
-
-# Locus 75:
-# allele coverages:
-#   0: 86
-#   2: 14
-#   3: 31
-# allele frequencies:
-#   0: 0.625
-#   2: 0.125
-#   3: 0.25
-# coverage: 131
-# id reads: 0
-# individuals:
-#   I1:
-#     0:
-#       cov: 15
-#       mutations: [] "0|0"
-#     3:
-#       cov: 9
-#       mutations:
-#       - p5@81:G>T  "0|1"
-#       - p7@45:G>A  "0|1"
-#       - p7@65:C>T  "0|1"
-#   I2:
-#     0:
-#       cov: 38
-#       mutations: [] "0|0"
-#   I3: {}            "."
-#   I4:
-#     0:
-#       cov: 33
-#       mutations: [] "0|0"
-#   I5:
-#     2:
-#       cov: 14
-#       mutations:
-#       - p7@45:G>A
-#       - p7@65:C>T
-#     3:
-#       cov: 22
-#       mutations:
-#       - p5@81:G>T "0|1"
-#       - p7@45:G>A "1|1"
-#       - p7@65:C>T "1|1"
-# p5 seq: ATCAGTGCTATGCAGAAGTAGGGTAACAGGCCCTAACATACGCTTACAGATGGTCCTGGTATAGCGCACATGATTATCCCTGGGACGAC
-# p7 seq: ACTTGTGACAGTTTAGACCATACGCAAGAGTTAGTGTCCGAATTTGTAACGCCTTCGTGTAATGGCGATCTCCTGATCTAGCAA
