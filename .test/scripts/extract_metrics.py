@@ -8,7 +8,7 @@ def main(args):
     with open(args.input, 'r') as infile:
         try:
             # extract metadata dictionary
-            data = list(yaml.load_all(infile))
+            data = list(yaml.load_all(infile, Loader=yaml.FullLoader))
             metadata = data[0]["metadata"]
         except yaml.YAMLError as exc:
             print(exc)
@@ -26,7 +26,7 @@ def main(args):
           )
 
     # load dictionary of expected values
-    expected_values = yaml.load(open(args.expected, "r"))
+    expected_values = yaml.load(open(args.expected, "r"), Loader=yaml.FullLoader)
 
     # prepare comparison_functions
     checks = {
