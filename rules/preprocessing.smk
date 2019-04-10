@@ -49,19 +49,20 @@ rule generate_consensus_reads:
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
-# remove umi from the p7 read after consensus reads have been computed
-rule trim_umi:
+# remove restriction enzyme residue p7 read after consensus reads have been computed
+# umis have already been removed during consensus read generation,
+# 
+rule trim_residue:
     input:
         "dedup/{unit}.consensus.2.fq.gz"
     output:
-        "trimmed-umi/{unit}.consensus.2.fq.gz"
+        "trimmed-residue/{unit}.consensus.2.fq.gz"
     conda:
         "../envs/cutadapt.yaml"
     params:
-        umi=config["umi"],
-        trim=config["umi"]["len"] + config["restriction-enzyme"]["p7"]["residue-len"]
+        trim=config["restriction-enzyme"]["p7"]["residue-len"]
     log:
-        "logs/trim_umi/{unit}.log"
+        "logs/trim_residue/{unit}.log"
     shell:
         "cutadapt -u {params.trim} {input} -o {output} > {log}"
 
@@ -69,7 +70,7 @@ rule trim_umi:
 rule merge_pe_reads:
     input:
         fq1="dedup/{unit}.consensus.1.fq.gz",
-        fq2="trimmed-umi/{unit}.consensus.2.fq.gz",
+        fq2="trimmed-residue/{unit}.consensus.2.fq.gz",
     output:
         merged="merged/{unit}.fq.gz"
     conda:
