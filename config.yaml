@@ -29,9 +29,9 @@ reads:
 # parameters for tools used in the pipeline
 params:
   stacks:
-    # * max_individual_mm: Number of mismatches allowed between stacks (the -M parameter of ustacks)
-    # * max_locus_mm: Number of mismatches allowed between sample loci (the -n parameter of cstacks)
-    # * min_reads: Minimum depth of coverage required to create a stack  (the -m parameter of ustacks)
+    # * max_individual_mm: Number of mismatches allowed between stacks (This is the -M parameter of ustacks)
+    # * max_locus_mm: Number of mismatches allowed between sample loci (This is the -n parameter of cstacks)
+    # * min_reads: Minimum depth of coverage required to create a stack  (This is the -m parameter of ustacks)
     #
     # Expand or shorted the following list to scan desired parameter spaces:
     - max_individual_mm: 4
