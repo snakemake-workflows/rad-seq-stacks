@@ -3,6 +3,9 @@ individuals: individuals.tsv
 units: units.tsv
 
 # define the used restriction enzymes
+# a list of supported enzyme names can be found in the stacks documentation
+# http://catchenlab.life.illinois.edu/stacks/comp/process_radtags.php
+# under "Restriction enzyme options".
 restriction-enzyme:
   p5:
     name: nsiI
@@ -18,6 +21,7 @@ umi:
   # maximum hamming distance of UMI to be considered a duplicate
   max_dist: 1
   # maximum hamming distance of read sequence to be considered a duplicate
+  # for reads that have the same UMI
   max_seq_dist: 2
 
 reads:
@@ -52,7 +56,9 @@ params:
     - max_individual_mm: 6
       max_locus_mm: 7
       min_reads: 3
-  # command line parameters for gstacks, except -I, -O, -B
+  # command line parameters for gstacks, in addition to -P -O and -M,
+  # which are handled by snakemake
   gstacks: ""
-  # command line parameters for process_radtags
+  # command line parameters for process_radtags in addition to:
+  # -f --renz_1 -b -o -y and -i, which are handled by snakemake
   process_radtags: "--inline_null -q -r --barcode_dist_1 3 -D"
