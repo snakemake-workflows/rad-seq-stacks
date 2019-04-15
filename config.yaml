@@ -25,9 +25,7 @@ umi:
   max_seq_dist: 2
 
 reads:
-  # Expected read length.
-  length: 100
-  # Spacer sequence to join paired end reads.
+  # sequence to join paired end reads with
   join_seq: NNNNN
 
 # parameters for tools used in the pipeline
