@@ -101,7 +101,7 @@ rule yaml2vcf:
 
 rule clean:
     shell:
-        "rm -r calls dedup extracted logs merged stacks trimmed trimmed-spacer trimmed-umi ustacks validation report.txt"
+        "rm -r calls dedup extracted logs merged stacks trimmed trimmed-spacer trimmed-residue ustacks validation report.txt"
 
 
 include: "../rules/common.smk"

@@ -44,7 +44,7 @@ rule generate_consensus_reads:
     log:
         "logs/consensus/{unit}.log"
     shell:
-        "rbt call-consensus-reads -l {params.umi[len]} "
+        "rbt call-consensus-reads -l {params.umi[len]} --reverse-umi "
         "-d {params.umi[max_dist]} -D {params.umi[max_seq_dist]} "
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
@@ -104,6 +104,7 @@ rule extract:
         "../scripts/extract-individuals.py"
 
 
+# Trim all (merged) reads of one individual to the same length
 rule force_same_length:
     input:
         "extracted/{individual}.fq.gz"
