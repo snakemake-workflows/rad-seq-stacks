@@ -5,9 +5,10 @@ import argparse
 
 import sys
 import vcfpy
+from collections import defaultdict
 
-from Bio.pairwise2 import align
-from Bio.pairwise2 import format_alignment
+# from Bio.pairwise2 import align
+# from Bio.pairwise2 import format_alignment
 
 from collections import Counter
 from functools import partial
@@ -58,6 +59,8 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
     #     print(record, s)
 
     # print("Searching")
+    name_mapping = defaultdict(list)
+
     for index, (gt_record) in enumerate(gt_data):
         # print user output
         if verbose and index % 100 == 0:
@@ -71,16 +74,37 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
 
         for sketch_stacks, record in sketched_stacks_data:
             if sk.compare_sketches(s_gt, sketch_stacks) > similarity:
-                assembly[(gt_record.name, joined_gt_seq)][1].append(record)
-                record.found = True
+                # assembly[(gt_record.name, joined_gt_seq)][1].append(record)
+                name_mapping[record.name].append(gt_record.name)
+                # record.found = True
 
     for _, record in sketched_stacks_data:
         if record.found is False:
             print("Not found:", record.seq)
-    return assembly
+
+    # TODO: build stacks:name -> gt name mapping
+    
+    return name_mapping
 
 
-def rename_vcf_entries(assembly, gt_data, stacks_data, gt_stats, args):
+def rename_vcf_entries(name_mapping, args):
+
+    reader = vcfpy.Reader.from_path(args.stacks_haplo)
+    writer = vcfpy.Writer.from_path(args.renamed_vcf, reader.header)
+
+    for record in reader:
+        stacks_locus = record.CHROM
+        
+        record.CHROM = name_mapping[stacks_locus]
+        writer.write_record(record)
+
+
+        # TODO find a mathcing stacks record or rename as unmatched #1
+        # Replace chrom with the one from the mapping
+        # write back to file
+        # If the resulting file is not ordered: write into list,
+        # sort list by chrom, write back as bulk
+
     # nr_undiscovered_gt_loci = 0
     # nr_loci_with_undiscovered_mutations = 0
     # nr_loci_with_discovered_mutations = 0
@@ -245,13 +269,13 @@ def main(args):
     stacks_data = file_parser.get_stacks_data(args)
 
     print("Analyzing:", file=sys.stderr)
-    assembly = find_matching_loci(gt_data, stacks_data,
-                                  similarity=args.similarity_threshold,
-                                  join_seq=args.join_seq,
-                                  )
+    name_mapping = find_matching_loci(gt_data, stacks_data,
+                                      similarity=args.similarity_threshold,
+                                      join_seq=args.join_seq,
+    )
 
     print("\n\nWriting output:\n", file=sys.stderr)
-    rename_vcf_entries(assembly, gt_data, stacks_data, gt_stats, args)
+    rename_vcf_entries(name_mapping, args)
 
     # print("\n\nSNPs Analysis:\n", file=sys.stderr)
     # evaluate_snps(assembly, gt_data, stacks_data, args)
@@ -262,40 +286,38 @@ def get_argparser():
     parser = argparse.ArgumentParser()
     # input
     parser.add_argument(
-        "-r", "--read-length",
-        help="Total simulated read length of one mate. ",
-        required=True,
-        type=int,
-        dest="read_length",
+        help="Path to a YAML gt file",
+        default="RAGEdataset_ATCACG_gt.yaml",
+        dest="yaml",
         )
     parser.add_argument(
-        "-j", "--join-seq",
-        help="Sequence used to join mates. Default 'NNNNN'",
-        required=True,
-        type=str,
-        dest="join_seq",
-        )
-    parser.add_argument(
-        "-s", "--stacks-snps-file",
         help="Path to a stacks snps vcf file",
         dest="stacks_haplo",
         )
     parser.add_argument(
-        "-f", "--stacks-fasta-file",
         help="Path to a stacks catalog fasta file",
         dest="stacks_fa",
         )
     parser.add_argument(
-        "-g", "-y", "--ground-truth", "--yaml",
-        help="Path the a YAML gt file",
-        default="RAGEdataset_ATCACG_gt.yaml",
-        dest="yaml",
+        "-r", "--read-length",
+        help="Total simulated read length of one mate.",
+        type=int,
+        dest="read_length",
+        default=100,
         )
-    # input
+    parser.add_argument(
+        "-j", "--join-seq",
+        help="Sequence used to join mates.",
+        required=True,
+        type=str,
+        dest="join_seq",
+        )
+
     parser.add_argument(
         "-o", "--output",
         help="If an output file should be written",
-        default=False,
+        dest="renamed_vcf",
+        required=True,
         )
     parser.add_argument(
         "-v", "--verbose",
