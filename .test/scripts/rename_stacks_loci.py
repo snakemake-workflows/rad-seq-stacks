@@ -76,7 +76,7 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
             if sk.compare_sketches(s_gt, sketch_stacks) > similarity:
                 # assembly[(gt_record.name, joined_gt_seq)][1].append(record)
                 name_mapping[record.name].append(gt_record.name)
-                # record.found = True
+                record.found = True
 
     for _, record in sketched_stacks_data:
         if record.found is False:
@@ -87,17 +87,31 @@ def find_matching_loci(gt_data, stacks_data, similarity, join_seq,
     return name_mapping
 
 
+def sort_records(rec):
+    if rec.CHROM.isdecimal():
+        return int(rec.CHROM), rec.POS
+    else:
+        return rec.CHROM, rec.POS
+
+
 def rename_vcf_entries(name_mapping, args):
 
     reader = vcfpy.Reader.from_path(args.stacks_haplo)
     writer = vcfpy.Writer.from_path(args.renamed_vcf, reader.header)
+    renamed_records = []
+    undetected_counter = 0
 
     for record in reader:
         stacks_locus = record.CHROM
-        
-        record.CHROM = name_mapping[stacks_locus]
-        writer.write_record(record)
+        try:
+            record.CHROM = name_mapping[stacks_locus][0].split(" ")[1]
+        except KeyError:
+            record.CHROM = f"False Locus {undetected_counter}"
+            undetected_counter += 1
+        renamed_records.append(record)
 
+    for record in sorted(renamed_records, key=sort_records):
+        writer.write_record(record)
 
         # TODO find a mathcing stacks record or rename as unmatched #1
         # Replace chrom with the one from the mapping
