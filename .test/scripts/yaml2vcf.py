@@ -92,27 +92,27 @@ def allele_present(individual_alleles, mut):
     """
     if len(individual_alleles) == 0:
         # dropout
-        return "."
+        return None, "."
 
     elif len(individual_alleles) == 1:
         if 0 in individual_alleles:
             # homozygous reference variant
-            return "0|0"
+            return (0, 0), "0|0"
         else:
             # homozygous mutated variant
             # check if the homozygous variant is the one in question
             for allele in individual_alleles.values():
                 for m in allele.mutations:
                     if mut.pos == m.pos:
-                        return "1|1"
+                        return (1, 1), "1|1"
             # if this is reached, the mutation in question was not present
-            return "0|0"
+            return (0, 0), "0|0"
 
     elif len(individual_alleles) == 2:
 
         if 0 in individual_alleles:
             # heterozygous mutated variant with reference
-            return "0|1"
+            return (0, 1), "0|1"
         else:
             # find out on which allele this variant is present
             on_first, on_second = (0, 0)
@@ -129,7 +129,7 @@ def allele_present(individual_alleles, mut):
                         else:
                             # simulated genomes are diploid
                             raise ValueError()
-            return f"{on_first}|{on_second}"
+            return (on_first, on_second), f"{on_first}|{on_second}"
 
     else:
         print("Invalid number of individual alleles. "
@@ -188,13 +188,15 @@ def generate_records(locus, individuals, chrom, offset):
                 else:
                     mutation_allele_frequencies[mut] = frequency
 
-    # individual_allele_coverage = dict()
-    # for ind_name, alleles in locus["individuals"].items():
-    #     for name, allele in alleles.items():
-    #         for mut in allele["mutations"]:
-    #             individual_allele_coverage[ind_name, parse_mutation(mut, offset)] = allele["cov"]
+    individual_allele_coverage = defaultdict(lambda: 0)
+    for ind_name, alleles in locus["individuals"].items():
+        for name, allele in alleles.items():
+            if not allele["mutations"]:
+                individual_allele_coverage[ind_name, 0] += allele["cov"]
+            else:
+                for mut in allele["mutations"]:
+                    individual_allele_coverage[ind_name, parse_mutation(mut, offset)] += allele["cov"]
 
-    # print("msc", mutation_sample_count)
     # TODO: make sure that there is no position with two different alt bases
     # right now, these are not handled properly
     #
@@ -228,15 +230,31 @@ def generate_records(locus, individuals, chrom, offset):
                 (i.cov for i in individual_alleles.values())
             )
             # get call strings
-            individual_calls["GT"] = allele_present(individual_alleles, mut)
+            allele_presence, allele_str = allele_present(individual_alleles, mut)
+            individual_calls["GT"] = allele_str
             # print(individual_calls["GT"])
 
-            # TODO: unclear how this should should be filled.
-            # try:
-            #     individual_calls["AD"] = individual_allele_coverage[(ind, mut)]
-            # except KeyError:
-            #     print(individual_allele_coverage)
-            #     raise
+            # fill individual allele coverage as a tuple of
+            # (coverage of ref allele, coverage of alt allele)
+            try:
+                
+                if allele_presence is None:
+                    ind_allele_cov = (0, 0)
+                elif allele_presence == (0, 0):
+                    ind_allele_cov = (individual_allele_coverage[(ind, 0)], 0)
+                elif allele_presence == (1, 1):
+                    ind_allele_cov = (0, individual_allele_coverage[(ind, mut)])
+                elif allele_presence == (1, 0):
+                    ind_allele_cov = (individual_allele_coverage[(ind, mut)], individual_allele_coverage[(ind, 0)])
+                elif allele_presence == (0, 1):
+                    ind_allele_cov = (individual_allele_coverage[(ind, 0)], individual_allele_coverage[(ind, mut)])
+                else:
+                    raise ValueError("Invalid mutation")
+                individual_calls["AD"] = ind_allele_cov
+            except KeyError:
+                print(individual_allele_coverage)
+                raise
+            
             # TODO: handle different variants of the same base on
             # different alleles => REF = A, ALT = C,T, GT= 0|1|2
             locus_calls.append(vcfpy.Call(ind, individual_calls))
@@ -250,7 +268,7 @@ def generate_records(locus, individuals, chrom, offset):
                 QUAL="",
                 FILTER=["PASS"],
                 INFO=info,
-                FORMAT=["GT", "DP"],
+                FORMAT=["GT", "DP", "AD"],
                 calls=locus_calls
             )
         # print("Record:", rec)

@@ -44,6 +44,7 @@ rule compare_loci:
         fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
         vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
         gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+        renamed_vcf="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
     output:
         "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml"
     conda:
@@ -92,12 +93,31 @@ rule yaml2vcf:
         vcf="validation/ground_truth.vcf",
     params:
         read_length=100,
-        join_seq="NNNNN",
+        join_seq=config["reads"]["join_seq"],
     conda:
         "../envs/testdata.yaml"
     script:
         "scripts/yaml2vcf.py"
 
+
+rule rename_stacks_loci:
+    input:
+        catalog="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
+        fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
+        stacks_vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
+        gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+    output:
+        renamed_vcf="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
+    params:
+        read_length=100,
+        join_seq=config["reads"]["join_seq"],
+    conda:
+        "../envs/testdata.yaml"
+    # script:
+    #     "scripts/rename_stacks_loci.py"
+    shell:
+        "python scripts/rename_stacks_loci.py {input.gt} {input.stacks_vcf} "
+        "{input.catalog} -j {params.join_seq} -o {output.renamed_vcf}"
 
 rule clean:
     shell:
