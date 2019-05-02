@@ -4,24 +4,20 @@ import yaml
 
 
 def main(args):
-    """Take all set parameters from argparse and check if they hold.
-    """
     # read in metric parsed from the output of evaluate_stacks_results.py
-    with open(args.input, "r") as infile:
-        # get last six lines
-        last_lines = [infile.__next__() for _ in range(8)]
-        for line in infile:
-            last_lines.pop(0)
-            last_lines.append(line)
-    _, discovered, _, of_total, _, undiscovered, _, ratio = last_lines
+    with open(args.input, 'r') as infile:
+        try:
+            # extract metadata dictionary
+            data = list(yaml.load_all(infile, Loader=yaml.FullLoader))
+            metadata = data[0]["metadata"]
+        except yaml.YAMLError as exc:
+            print(exc)
 
-    # aggregate all results in a dictionary, make sure the keys are equal to
-    # the keywords in the expected.yaml file
     metrics = {
-        "discovered": int(discovered.strip()),
-        "of_total": int(of_total.strip()),
-        "undiscovered": int(undiscovered.strip()),
-        "ratio": float(ratio.strip()),
+        "discovered": metadata["Loci with mutations that were successfully discovered"],
+        "of_total": metadata["Total simulated mutation loci"],
+        "undiscovered": metadata["Loci with mutations that were not discovered by stacks"],
+        "ratio": metadata["SNP discovery ratio"],
         }
     print(f"Ratio of discovered to total simulated SNPs:\n  "
           f"{metrics['discovered']}/{metrics['of_total']} missing "
@@ -30,7 +26,7 @@ def main(args):
           )
 
     # load dictionary of expected values
-    expected_values = yaml.load(open(args.expected, "r"))
+    expected_values = yaml.load(open(args.expected, "r"), Loader=yaml.FullLoader)
 
     # prepare comparison_functions
     checks = {

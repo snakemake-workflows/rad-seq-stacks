@@ -15,10 +15,11 @@ units = pd.read_csv("units.tsv", dtype=str, sep="\t").set_index("id", drop=False
 
 rule all:
     input:
-        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.snps.vcf",
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.snps.vcf",
                p=config["params"]["stacks"]),
-        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/validation.yaml",
+        expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.validation.yaml",
                p=config["params"]["stacks"]),
+        "validation/ground_truth.vcf",
         "report.txt"
 
 
@@ -41,10 +42,11 @@ rule compare_loci:
     input:
         fa="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
         fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
-        vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/populations.snps.vcf",
+        vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
         gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+        renamed_vcf="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.yaml"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml"
     conda:
         "../envs/testdata.yaml"
     params:
@@ -58,10 +60,10 @@ rule compare_loci:
 
 rule verify_results:
     input:
-        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/validation.txt",
+        result="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml",
         expected="expected_results/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/expected.yaml"
     output:
-        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/result.txt"
+        "validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.result.yaml"
     conda:
         "../envs/testdata.yaml"
     shell:
@@ -70,7 +72,7 @@ rule verify_results:
 
 rule aggregate_results:
     input:
-        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/result.txt",
+        results=expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.result.yaml",
                p=config["params"]["stacks"])
     output:
         report="report.txt"
@@ -84,9 +86,42 @@ rule aggregate_results:
                     report_file.write(res_file.read() + "\n")
 
 
+rule yaml2vcf:
+    input:
+        yaml="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+    output:
+        vcf="validation/ground_truth.vcf",
+    params:
+        read_length=100,
+        join_seq=config["reads"]["join_seq"],
+    conda:
+        "../envs/testdata.yaml"
+    script:
+        "scripts/yaml2vcf.py"
+
+
+rule rename_stacks_loci:
+    input:
+        catalog="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
+        fai="stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
+        stacks_vcf="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
+        gt="data/easy_dataset/ddRAGEdataset_2_p7_barcodes_gt.yaml",
+    output:
+        renamed_vcf="validation/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.snps.vcf",
+    params:
+        read_length=100,
+        join_seq=config["reads"]["join_seq"],
+    conda:
+        "../envs/testdata.yaml"
+    # script:
+    #     "scripts/rename_stacks_loci.py"
+    shell:
+        "python scripts/rename_stacks_loci.py {input.gt} {input.stacks_vcf} "
+        "{input.catalog} -j {params.join_seq} -o {output.renamed_vcf}"
+
 rule clean:
     shell:
-        "rm -r calls dedup extracted logs merged stacks trimmed trimmed-spacer trimmed-umi ustacks validation report.txt"
+        "rm -r calls dedup extracted logs merged stacks trimmed trimmed-spacer trimmed-residue ustacks validation report.txt"
 
 
 include: "../rules/common.smk"

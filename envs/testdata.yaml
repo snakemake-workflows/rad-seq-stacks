@@ -7,6 +7,8 @@ dependencies:
   - pysam
   - biopython
   - sortedcontainers
+  - pyyaml >=5.0
+  - vcfpy
   - pip:
     - mmh3
     - recordtype

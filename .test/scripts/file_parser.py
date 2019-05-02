@@ -79,14 +79,15 @@ def parse_rage_gt_file(args):
     loci_with_snps = ((n, l) for (n, l) in loci.items()
                       if len(l["allele coverages"]) > 1)
 
-    print("inds", inds)
+    # print("inds", inds)
     spacer_lengths = [len(i["p5 spacer"]) for i
                       in inds["Individual Information"].values()]
-    spacer_variance = max(spacer_lengths) - min(spacer_lengths)
+    # spacer_variance = max(spacer_lengths) - min(spacer_lengths)
     overhang_lengths = [len(i["p5 overhang"]) for i
                         in inds["Individual Information"].values()]
-    overhang_variance = max(overhang_lengths) - min(overhang_lengths)
-    offset = args.read_length - (min(spacer_lengths) + min(overhang_lengths)) + len(args.join_seq)
+    # overhang_variance = max(overhang_lengths) - min(overhang_lengths)
+    offset = args.read_length - (min(spacer_lengths) + min(overhang_lengths)) \
+        + len(args.join_seq)
 
     for name, locus in loci.items():
         dropout = []
@@ -98,7 +99,7 @@ def parse_rage_gt_file(args):
                 # hence everything that does not evaluate to False
                 # is a valid entry with one or two alleles
                 for nr_allele, allele in ind.items():
-
+                    normalized_mutations = set()
                     if allele["mutations"]:
                         normalized_mutations = set(
                             normalize_mutation(a, offset)
@@ -107,7 +108,8 @@ def parse_rage_gt_file(args):
                         if nr_allele not in gt_alleles:
                             gt_alleles[nr_allele] = {
                                 "frequency": locus["allele frequencies"][nr_allele],
-                                "mutations": process_mutations(normalized_mutations)
+                                "mutations": process_mutations(normalized_mutations),
+                                "coverage": locus["allele coverages"][nr_allele],
                             }
 
                         mutations |= normalized_mutations  # extend set
@@ -173,6 +175,8 @@ def get_stacks_data(args):
     if chromosome is not None:
         loc_seqs[chromosome] = record
 
+    # add all remaining loci without variants to the dictionary
+    # so that they can be compared with the ground truth
     far = dp.FastaReader(args.stacks_fa)
     for seq, name, *_ in far.chromosomes():
 
@@ -180,6 +184,8 @@ def get_stacks_data(args):
         # In the vcf files, the information is not included
         chromosome = name.decode().split()[0]
 
+        # add a record without variants (variant record) for loci without
+        # variants detected by stacks.
         if chromosome not in loc_seqs:
             loc_seqs[chromosome] = VCFRecord(chromosome, seq, [], False)
 
