@@ -44,6 +44,7 @@ rule generate_consensus_reads:
     log:
         "logs/consensus/{unit}.log"
     shell:
+        "TMPDIR=dedup "
         "rbt call-consensus-reads -l {params.umi[len]} --reverse-umi "
         "-d {params.umi[max_dist]} -D {params.umi[max_seq_dist]} "
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
@@ -51,7 +52,7 @@ rule generate_consensus_reads:
 
 # remove restriction enzyme residue p7 read after consensus reads have been computed
 # umis have already been removed during consensus read generation,
-# 
+#
 rule trim_residue:
     input:
         "dedup/{unit}.consensus.2.fq.gz"
