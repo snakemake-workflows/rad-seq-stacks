@@ -50,9 +50,8 @@ rule generate_consensus_reads:
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
-# remove restriction enzyme residue p7 read after consensus reads have been computed
-# umis have already been removed during consensus read generation,
-#
+# remove restriction enzyme residue p7 read after consensus reads have been
+# computed umis have already been removed during consensus read generation,
 rule trim_residue:
     input:
         "dedup/{unit}.consensus.2.fq.gz"

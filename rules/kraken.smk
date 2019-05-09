@@ -9,11 +9,14 @@ rule kraken:
     log:
         "logs/kraken/{unit}.log"
     threads: 64
+    params:
+        gzip=lambda wildcards, input: "--gzip-compressed" if input.reads[0].endswith(".gz") else ""
     shell:
         """
         if [[ -s {input.reads[0]} ]]
         then
-            kraken --fastq-input --paired --threads {threads} --db {input.db} \
+            kraken --fastq-input --paired {params.gzip} \
+            --threads {threads} --db {input.db} \
             {input.reads} > {output} 2> {log}
         else
             touch {output}
