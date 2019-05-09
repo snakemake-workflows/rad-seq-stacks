@@ -45,7 +45,7 @@ rule generate_consensus_reads:
         "logs/consensus/{unit}.log"
     shell:
         "TMPDIR=dedup "
-        "rbt call-consensus-reads -l {params.umi[len]} --reverse-umi "
+        "rbt call-consensus-reads -l {params.umi[len]} --umi-on-reverse "
         "-d {params.umi[max_dist]} -D {params.umi[max_seq_dist]} "
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
