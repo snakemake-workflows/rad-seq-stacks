@@ -12,6 +12,12 @@ individuals = pd.read_csv("individuals.tsv", dtype=str, sep="\t").set_index("id"
 individuals["hash"] = np.arange(len(individuals)) # individuals.id.str.encode("utf-8").apply(zlib.crc32)
 units = pd.read_csv("units.tsv", dtype=str, sep="\t").set_index("id", drop=False)
 
+kraken_db = config["params"]["kraken"].get("db")
+kraken_targets = []
+if kraken_db:
+    kraken_targets = expand(["plots/{unit}.kmer-mapping.svg",
+                             "plots/{unit}.classification.svg"],
+                            unit=units.id)
 
 rule all:
     input:
@@ -19,6 +25,7 @@ rule all:
                p=config["params"]["stacks"]),
         expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.validation.yaml",
                p=config["params"]["stacks"]),
+        kraken_targets,
         "validation/ground_truth.vcf",
         "report.txt"
 
@@ -127,3 +134,4 @@ rule clean:
 include: "../rules/common.smk"
 include: "../rules/preprocessing.smk"
 include: "../rules/stacks.smk"
+include: "../rules/kraken.smk"

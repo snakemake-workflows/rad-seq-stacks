@@ -22,7 +22,7 @@ def load_classification_tree(f, min_percentage=0.0, node_fmt="{name} ({perc}%)")
         return '{}"{}":'.format(m.group("indent"), row.taxid)
 
     tree = "\n".join(fmt_node(row) for row in classification.itertuples() if row.percentage >= min_percentage)
-    tree = yaml.load(tree)
+    tree = yaml.load(tree, Loader=yaml.FullLoader)
 
 
     def traverse(subtree, G, parent=None):
