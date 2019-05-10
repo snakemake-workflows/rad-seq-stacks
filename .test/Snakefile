@@ -25,7 +25,7 @@ rule all:
                p=config["params"]["stacks"]),
         expand("validation/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.validation.yaml",
                p=config["params"]["stacks"]),
-        kraken_targets
+        kraken_targets,
         "validation/ground_truth.vcf",
         "report.txt"
 
@@ -134,4 +134,4 @@ rule clean:
 include: "../rules/common.smk"
 include: "../rules/preprocessing.smk"
 include: "../rules/stacks.smk"
-include: "rules/kraken.smk"
+include: "../rules/kraken.smk"
