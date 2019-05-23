@@ -143,6 +143,9 @@ rule populations:
         report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.vcf", type=["snps", "haps"]),
                caption="../report/calls.rst",
                category="Populations"),
+        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.genepop", type=["snps", "haps"]),
+        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.fixed.phylip{type}", type=["", ".log"]),
+        "calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.samples-raw.fa",
         report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
                caption="../report/sumstats.rst",
                category="Populations"),
@@ -160,5 +163,5 @@ rule populations:
     shell:
         "mkdir -p {params.outdir}; "
         "populations -t {threads} -P {params.gstacks_dir} "
-        "-O {params.outdir} --vcf > {log}; "
+        "-O {params.outdir} --vcf --genepop --phylip --fasta > {log}; "
         "rename 's!{params.outdir}/!{params.outdir}.!' {params.outdir}/* "

@@ -21,6 +21,12 @@ rule all:
     input:
         expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.snps.vcf",
                p=config["params"]["stacks"]),
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.snps.genepop",
+               p=config["params"]["stacks"]),
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.samples-raw.fa",
+               p=config["params"]["stacks"]),
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.fixed.phylip",
+               p=config["params"]["stacks"]),
         kraken_targets
 
 
