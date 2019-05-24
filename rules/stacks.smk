@@ -140,12 +140,8 @@ rule populations:
     input:
         "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls"
     output:
-        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.vcf", type=["snps", "haps"]),
-               caption="../report/calls.rst",
-               category="Populations"),
-        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.genepop", type=["snps", "haps"]),
-        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.fixed.phylip{type}", type=["", ".log"]),
-        "calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.populations.samples-raw.fa",
+        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{e}",
+               e=pop_suffixes()),
         report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
                caption="../report/sumstats.rst",
                category="Populations"),
@@ -154,7 +150,8 @@ rule populations:
                category="Populations"),
     params:
         outdir="calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}",
-        gstacks_dir=lambda w, input: os.path.dirname(input[0])
+        gstacks_dir=lambda w, input: os.path.dirname(input[0]),
+        output_types=[f"--{t}" for t in config["params"]["populations"]["output_types"]],
     conda:
         "../envs/stacks.yaml"
     threads: 8
@@ -163,5 +160,5 @@ rule populations:
     shell:
         "mkdir -p {params.outdir}; "
         "populations -t {threads} -P {params.gstacks_dir} "
-        "-O {params.outdir} --vcf --genepop --phylip --fasta > {log}; "
+        "-O {params.outdir} {params.output_types} > {log}; "
         "rename 's!{params.outdir}/!{params.outdir}.!' {params.outdir}/* "
