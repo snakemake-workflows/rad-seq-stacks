@@ -11,13 +11,12 @@ rule ustacks:
     params:
         outdir=get_outdir,
         hash=lambda w: individuals.loc[w.individual, "hash"]
-    threads: 8
     conda:
         "../envs/stacks.yaml"
     log:
         "logs/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.log"
     shell:
-        "ustacks -p {threads} -f {input} -o {params.outdir} "
+        "ustacks -f {input} -o {params.outdir} "
         "--name {wildcards.individual} "
         "-i {params.hash} "
         "-M {wildcards.max_individual_mm} "
@@ -48,11 +47,10 @@ rule cstacks:
         individuals=fmt_ustacks_input
     conda:
         "../envs/stacks.yaml"
-    threads: 8
     log:
         "logs/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
-        "cstacks -n {wildcards.max_locus_mm} -p {threads} {params.individuals} "
+        "cstacks -n {wildcards.max_locus_mm} {params.individuals} "
         "-o {params.outdir} 2> {log}"
 
 
@@ -71,11 +69,11 @@ rule sstacks:
         cstacks_dir=lambda w, input: os.path.dirname(input.cstacks)
     conda:
         "../envs/stacks.yaml"
-    threads: 8
+    threads: 8 # TODO use less threads?
     log:
         "logs/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
-        "sstacks -p {threads} {params.individuals} -c {params.cstacks_dir} "
+        "sstacks {params.individuals} -c {params.cstacks_dir} "
         "-o {params.outdir} 2> {log}"
 
 
