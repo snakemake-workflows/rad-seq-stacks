@@ -51,6 +51,14 @@ params:
   gstacks: ""
   # command line parameters for process_radtags
   process_radtags: "--inline_null -q -r --barcode_dist_1 3 -D"
+  populations:
+    # Desired output formats for the stacks populations script.
+    # Possible values are vcf, genepop, fasta, phylip
+    output_types:
+      - vcf
+      - genepop
+      - fasta
+      - phylip
   kraken:
     # Refer to kraken DB folder, see https://ccb.jhu.edu/software/kraken.
     # Kraken is used to classify reads for possible contaminations.
