@@ -14,6 +14,8 @@ rule trim_p7_spacer:
         lambda w: units.loc[w.unit, "fq2"]
     output:
         "trimmed-spacer/{unit}.2.fq.gz"
+    benchmark:
+        "benchmarks/trimmed-spacer/{unit}.txt"
     params:
         spacer=lambda w: units.loc[w.unit, "p7_spacer"]
     conda:
@@ -43,6 +45,8 @@ rule generate_consensus_reads:
         "../envs/consensus.yaml"
     log:
         "logs/consensus/{unit}.log"
+    benchmark:
+        "benchmarks/consensus/{unit}.txt"
     shell:
         "TMPDIR=dedup "
         "rbt call-consensus-reads -l {params.umi[len]} --umi-on-reverse "
@@ -63,6 +67,8 @@ rule trim_residue:
         trim=config["restriction-enzyme"]["p7"]["residue-len"]
     log:
         "logs/trim_residue/{unit}.log"
+    benchmark:
+        "benchmarks/trimmed-residue/{unit}.txt"
     shell:
         "cutadapt -u {params.trim} {input} -o {output} > {log}"
 
@@ -77,6 +83,8 @@ rule merge_pe_reads:
         "../envs/merge.yaml"
     log:
         "logs/merge/{unit}.log"
+    benchmark:
+        "benchmarks/merge/{unit}.txt"
     params:
         join_quality='H',
         join_seq=config["reads"]["join_seq"]
@@ -110,6 +118,8 @@ rule force_same_length:
         "extracted/{individual}.fq.gz"
     output:
         "trimmed/{individual}/{individual}.fq.gz"
+    benchmark:
+        "benchmarks/trim_lenth/{individual}.txt"
     conda:
         "../envs/seqtk.yaml"
     shell:
