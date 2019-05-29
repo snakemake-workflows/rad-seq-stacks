@@ -15,6 +15,8 @@ rule ustacks:
         "../envs/stacks.yaml"
     log:
         "logs/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.log"
+    benchmark:
+        "benchmarks/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.txt"
     shell:
         "ustacks -f {input} -o {params.outdir} "
         "--name {wildcards.individual} "
@@ -49,6 +51,8 @@ rule cstacks:
         "../envs/stacks.yaml"
     log:
         "logs/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+    benchmark:
+        "benchmarks/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.txt"
     shell:
         "cstacks -n {wildcards.max_locus_mm} {params.individuals} "
         "-o {params.outdir} 2> {log}"
@@ -72,6 +76,8 @@ rule sstacks:
     threads: 8 # TODO use less threads?
     log:
         "logs/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+    benchmark:
+        "benchmarks/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.txt"
     shell:
         "sstacks {params.individuals} -c {params.cstacks_dir} "
         "-o {params.outdir} 2> {log}"
@@ -104,6 +110,8 @@ rule tsv2bam:
         "../envs/stacks.yaml"
     log:
         "logs/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.log"
+    benchmark:
+        "benchmarks/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.txt"
     shell:
         "tsv2bam -s {wildcards.individual} "
         "-P {params.sstacks_dir} > {log}"
@@ -128,6 +136,8 @@ rule gstacks:
     threads: 8
     log:
         "logs/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+    benchmark:
+        "benchmarks/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
         "echo 'Input files: {input.bams}' > log; "
         "gstacks {params.config} -P {params.bam_dir} -O {params.outdir} "
@@ -155,6 +165,8 @@ rule populations:
     threads: 8
     log:
         "logs/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+    benchmark:
+        "benchmarks/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
         "mkdir -p {params.outdir}; "
         "populations -t {threads} -P {params.gstacks_dir} "

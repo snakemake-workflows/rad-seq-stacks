@@ -8,6 +8,8 @@ rule kraken:
         "../envs/kraken.yaml"
     log:
         "logs/kraken/{unit}.log"
+    benchmark:
+        "benchmarks/kraken/{unit}.txt"
     threads: 64
     params:
         gzip=lambda wildcards, input: "--gzip-compressed" if input.reads[0].endswith(".gz") else ""
@@ -35,6 +37,8 @@ rule kraken_report:
         "../envs/kraken.yaml"
     log:
         "logs/kraken-report/{unit}.log"
+    benchmark:
+        "benchmarks/kraken/{unit}_report.txt"
     shell:
         "kraken-report --db {input.db} {input.tsv} > {output} 2> {log}"
 
@@ -56,6 +60,8 @@ rule extract_classification_tree:
         colormap="kraken/{unit}.colormap.pickle"
     output:
         "kraken/{unit}.classification.dot"
+    benchmark:
+        "benchmarks/kraken/{unit}_classification_tree.txt"
     conda:
         "../envs/eval.yaml"
     script:
@@ -87,5 +93,5 @@ rule plot_classification_tree:
     shell:
         "dot -Tsvg {input} "
         "-Grankdir=TB -Nshape=box -Nstyle=rounded -Nfontname=sans "
-        "-Nfontsize=10 -Npenwidth=2 -Epenwidth=2 -Ecolor=grey -Nbgcolor=white " # -Ncolor='{params.color}'"
+        "-Nfontsize=10 -Npenwidth=2 -Epenwidth=2 -Ecolor=grey -Nbgcolor=white "  # -Ncolor='{params.color}'"
         "> {output}"
