@@ -27,6 +27,39 @@ umi:
 reads:
   # sequence to join paired end reads with
   join_seq: NNNNN
+  # Read handling mode. This parameter is used to specify
+  # input files for ustacks, via the force_same_length rule and the
+  # trim_input function.
+  #
+  # Currently three modes are supported: ["p5_only", "merged", "concatenated"]
+  # 
+  # "p5_only" uses only the p5 reads, completely ignoring p7 reads.
+  #
+  #       reads_1.fq
+  #       ----------
+  #       [r1_p5]
+  #       [r2_p5]
+  #       ...
+  #
+  # "merged" (horizontally) merges p5 and p7 read pairs into one long pseudo-single-end read
+  #
+  #       reads_1.fq     reads_2.fq      reads.fq
+  #       ----------     ----------      --------
+  #       [r1_p5]     +  [r1_p7]      =  [r1_p5]+[r1_p7]
+  #       [r2_p5]        [r1_p7]         [r2_p5]+[r2_p7]
+  #       ...            ...             ...
+  #
+  # "concatenated" (vertically) appends the p7 reads to the p5 read file.
+  #
+  #       reads_1.fq     reads_2.fq      reads.fq
+  #       ----------     ----------      --------
+  #       [r1_p5]     +  [r1_p7]      =  [r1_p5]
+  #       [r2_p5]        [r1_p7]         [r2_p5]
+  #       ...            ...             ...
+  #                                      [r1_p7]
+  #                                      [r2_p7]
+  #                                      ...
+  mode: "merged"
 
 # parameters for tools used in the pipeline
 params:

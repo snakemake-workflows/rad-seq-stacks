@@ -153,6 +153,12 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                     ]
                     if stacks_locus.data:
                         successfully_detected = True
+                        # NOTE: Currently this only checks, if the stacks locus
+                        # was successfully aligned and also detected a mutation
+                        # the kind of the mutation is not checked. Neither, if
+                        # the correct mutation (e.g. SNP C>G at position 42 in
+                        # the forward read) was detected.
+                        #
                         # TODO: Evaluate if right SNPs were found
                         #       (mind that Stacks might not call the allele
                         #       RAGE simulated as root as main allele

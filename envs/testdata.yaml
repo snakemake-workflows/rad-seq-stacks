@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python >=3.6
+  - numpy >=1.17
   - ddrage =1.6.3
   - pysam
   - biopython

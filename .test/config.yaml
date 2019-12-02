@@ -25,6 +25,16 @@ reads:
   length: 100
   # Spacer sequence to join paired end reads.
   join_seq: NNNNN
+  # Read handling mode. This parameter is used to specify
+  # input files for ustacks, via the force_same_length rule and the
+  # trim_input function.
+  #
+  # Currently three modes are supported: ["p5_only", "merged", "concatenated"]
+  # 
+  # "p5_only" uses only the p5 reads, completely ignoring p7 reads.
+  # "merged" merges p5 and p7 read pairs into one long pseudo-single-end read
+  # "concatenated" appends the p7 reads to the p5 read file.
+  mode: "merged"
 
 # parameters for tools used in the pipeline
 params:

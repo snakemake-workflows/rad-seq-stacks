@@ -17,6 +17,15 @@ if kraken_db:
                              "plots/{unit}.classification.svg"],
                             unit=units.id)
 
+def param_str(s):
+    """Assemble a parameter string in the format n=6.M=5.m=3
+    from a stacks params dictionary in the config file.
+    """
+    return f"n={s['max_locus_mm']}.M={s['max_individual_mm']}.m={s['min_reads']}"
+
+parameter_sets = [param_str(param_set) for param_set in config["params"]["stacks"]]
+
+
 def pop_suffixes():
     """Map input file types of the stacks populations script
     to the file suffixes they generate.
@@ -42,9 +51,12 @@ def pop_suffixes():
 
 rule all:
     input:
-        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}.populations.{e}",
+        expand("calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.{e}",
                p=config["params"]["stacks"],
                e=pop_suffixes(),
+        ),
+        expand("plots/stacks_size_distribution_{parameter_set}.pdf",
+               parameter_set=parameter_sets,
         ),
         kraken_targets
 
@@ -53,3 +65,4 @@ include: "rules/common.smk"
 include: "rules/preprocessing.smk"
 include: "rules/stacks.smk"
 include: "rules/kraken.smk"
+include: "rules/qc.smk"

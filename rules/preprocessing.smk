@@ -1,3 +1,20 @@
+rule shortest_read_per_sample:
+    input:
+        "{path}/{individual}.{orientation}.fq.gz"
+    output:
+        "{path}/{individual}.{orientation}.len"
+    conda:
+        "../envs/seqtk.yaml"
+    shell:
+        "seqtk fqchk {input} | grep -oP 'min_len: \\K[0-9]+' > {output}"
+
+rule shortest_read:
+    input:
+        expand("{{path}}/{individual}.{{orientation}}.len", individual=individuals.id)
+    output:
+        "{path}/all.{orientation}.len"
+    script:
+        "../scripts/minimal_read_length.py"
 
 rule barcodes:
     output:
@@ -54,37 +71,41 @@ rule generate_consensus_reads:
         "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
 
 
-# remove restriction enzyme residue p7 read after consensus reads have been
-# computed umis have already been removed during consensus read generation,
+# remove restriction enzyme residue p7 read after individual extraction
+# consensus reads have already been computed and umis have already been
+# removed during consensus read generation, so the residue is at the start
+# of the p7 read
 rule trim_residue:
     input:
-        "dedup/{unit}.consensus.2.fq.gz"
+        "extracted/{individual}.2.fq.gz"
     output:
-        "trimmed-residue/{unit}.consensus.2.fq.gz"
+        "trimmed-residue/{individual}.2.fq.gz"
     conda:
         "../envs/cutadapt.yaml"
     params:
         trim=config["restriction-enzyme"]["p7"]["residue-len"]
     log:
-        "logs/trim_residue/{unit}.log"
+        "logs/trim_residue/{individual}.log"
     benchmark:
-        "benchmarks/trimmed-residue/{unit}.txt"
+        "benchmarks/trimmed-residue/{individual}.txt"
     shell:
         "cutadapt -u {params.trim} {input} -o {output} > {log}"
 
 
 rule merge_pe_reads:
     input:
-        fq1="dedup/{unit}.consensus.1.fq.gz",
-        fq2="trimmed-residue/{unit}.consensus.2.fq.gz",
+        fq1="extracted/{individual}.1.fq.gz",
+        fq2="trimmed-residue/{individual}.2.fq.gz",
+        fq1_length="extracted/all.1.len",
+        fq2_length="trimmed-residue/all.2.len",
     output:
-        merged="merged/{unit}.fq.gz"
+        merged="merged/{individual}.fq.gz"
     conda:
         "../envs/merge.yaml"
     log:
-        "logs/merge/{unit}.log"
+        "logs/merge/{individual}.log"
     benchmark:
-        "benchmarks/merge/{unit}.txt"
+        "benchmarks/merge/{individual}.txt"
     params:
         join_quality='H',
         join_seq=config["reads"]["join_seq"]
@@ -92,12 +113,30 @@ rule merge_pe_reads:
         "../scripts/merge_mates.py"
 
 
+# concatenate p5 and p7 files into one .fq.gz file
+rule concatenate_read_files:
+    input:
+        fq1="extracted/{individual}.1.fq.gz",
+        fq2="trimmed-residue/{individual}.2.fq.gz",
+    output:
+        concat="concatenated/{individual}.fq.gz"
+    log:
+        "logs/concatenate/{individual}.log"
+    benchmark:
+        "benchmarks/merge/{individual}.txt"
+    shell:
+        "zcat {input.fq1} {input.fq2} | gzip -c > {output.concat}"
+
+
 rule extract:
     input:
-        fq1=expand("merged/{unit}.fq.gz", unit=units.id),
+        fq1=expand("dedup/{unit}.consensus.1.fq.gz", unit=units.id),
+        fq2=expand("dedup/{unit}.consensus.2.fq.gz", unit=units.id),
         barcodes=expand("barcodes/{unit}.tsv", unit=units.id)
     output:
-        expand("extracted/{individual}.fq.gz", individual=individuals.id)
+        expand(["extracted/{individual}.1.fq.gz",
+                "extracted/{individual}.2.fq.gz"],
+               individual=individuals.id)
     log:
         expand("logs/extract/{unit}.log",
                unit=units.id)
@@ -112,10 +151,27 @@ rule extract:
         "../scripts/extract-individuals.py"
 
 
+
+def trim_input():
+    """Depending on the desired mode, this can either be p5 reads only,
+    p5 and p7 reads merged into one ('single end') read, or the p5 and p7 
+    files concatenated into one file.
+    """
+    mode = config["reads"]["mode"]
+    if mode == "p5_only":
+        return "extracted/{individual}.1.fq.gz"
+    elif mode == "merged":
+        return "merged/{individual}.fq.gz"
+    elif mode == "concatenated":
+        return "concatenated/{individual}.fq.gz"
+    else:
+        raise ValueError(f"Invalid mode: {mode}. Should be 'p5_only', 'merged', or 'concatenated'")
+
+
 # Trim all (merged) reads of one individual to the same length
 rule force_same_length:
     input:
-        "extracted/{individual}.fq.gz"
+        trim_input()
     output:
         "trimmed/{individual}/{individual}.fq.gz"
     benchmark:

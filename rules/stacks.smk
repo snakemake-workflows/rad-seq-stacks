@@ -73,13 +73,13 @@ rule sstacks:
         cstacks_dir=lambda w, input: os.path.dirname(input.cstacks)
     conda:
         "../envs/stacks.yaml"
-    threads: 8 # TODO use less threads?
+    threads: 2
     log:
         "logs/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     benchmark:
         "benchmarks/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.txt"
     shell:
-        "sstacks {params.individuals} -c {params.cstacks_dir} "
+        "sstacks {params.individuals} -c {params.cstacks_dir} -p 2 "
         "-o {params.outdir} 2> {log}"
 
 
@@ -133,14 +133,14 @@ rule gstacks:
         config=config["params"]["gstacks"]
     conda:
         "../envs/stacks.yaml"
-    threads: 8
+    threads: 2
     log:
         "logs/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     benchmark:
         "benchmarks/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     shell:
         "echo 'Input files: {input.bams}' > log; "
-        "gstacks {params.config} -P {params.bam_dir} -O {params.outdir} "
+        "gstacks {params.config} -P {params.bam_dir} -O {params.outdir} -t 2 "
         "-M {input.popmap} >> {log}"
 
 
@@ -148,12 +148,12 @@ rule populations:
     input:
         "stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls"
     output:
-        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{e}",
+        expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{e}",
                e=pop_suffixes()),
-        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
                caption="../report/sumstats.rst",
                category="Populations"),
-        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}.populations.{type}.tsv", type=["haplotypes", "hapstats"]),
+        report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["haplotypes", "hapstats"]),
                caption="../report/haplotypes.rst",
                category="Populations"),
     params:
@@ -170,5 +170,4 @@ rule populations:
     shell:
         "mkdir -p {params.outdir}; "
         "populations -t {threads} -P {params.gstacks_dir} "
-        "-O {params.outdir} {params.output_types} > {log}; "
-        "rename 's!{params.outdir}/!{params.outdir}.!' {params.outdir}/* "
+        "-O {params.outdir} {params.output_types} > {log}"
