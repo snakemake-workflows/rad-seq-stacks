@@ -59,7 +59,7 @@ reads:
   #                                      [r1_p7]
   #                                      [r2_p7]
   #                                      ...
-  mode: "merged"
+  mode: "concatenated"
 
 # parameters for tools used in the pipeline
 params:
