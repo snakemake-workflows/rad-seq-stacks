@@ -34,7 +34,7 @@ reads:
   # "p5_only" uses only the p5 reads, completely ignoring p7 reads.
   # "merged" merges p5 and p7 read pairs into one long pseudo-single-end read
   # "concatenated" appends the p7 reads to the p5 read file.
-  mode: "merged"
+  mode: "concatenated"
 
 # parameters for tools used in the pipeline
 params:
