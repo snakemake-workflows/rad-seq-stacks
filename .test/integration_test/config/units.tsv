@@ -1,0 +1,3 @@
+unit	p7_barcode	p7_spacer	fq1	fq2
+unitA	ATCACG	0	resources/libraries/reads_ATCACG_1.fastq.gz	resources/libraries/reads_ATCACG_2.fastq.gz
+unitB	ACTTGA	2	resources/libraries/reads_ACTTGA_1.fastq.gz	resources/libraries/reads_ACTTGA_2.fastq.gz

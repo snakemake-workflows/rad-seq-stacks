@@ -1,0 +1,50 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches_ignore: []
+
+jobs:
+  Linting:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Lint workflow
+      uses: snakemake/snakemake-github-action@v1.14.0
+      with:
+        directory: .test/integration_test
+        snakefile: workflow/Snakefile
+        args: "--lint"
+
+  Integration-Test:
+    runs-on: ubuntu-latest
+    needs: Linting
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@2.0.0
+
+    - name: Test workflow (local test data)
+      uses: snakemake/snakemake-github-action@v1.14.0
+      with:
+        directory: .test/integration_test
+        snakefile: workflow/Snakefile
+        args: "--use-conda --conda-frontend mamba --show-failed-logs -j 2 --conda-cleanup-pkgs"
+
+    - name: Upload logs
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: workflow-logs
+        path: .test/integration_test/logs/*
+
+    - name: Test report
+      uses: snakemake/snakemake-github-action@v1.14.0
+      with:
+        directory: .test/integration_test
+        snakefile: workflow/Snakefile
+        args: "--report report.zip"

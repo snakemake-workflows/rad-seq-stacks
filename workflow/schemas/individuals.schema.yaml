@@ -1,0 +1,21 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+
+description: an entry in the individuals sheet
+
+# columns that the config/individuals.tsv file can have and which type they should be
+properties:
+  id:
+    type: string
+    description: sample name/identifier for a sequenced individual
+  unit:
+    type: string
+    description: Identifier for a sequencing batch as specified in units.tsv
+  p5_barcode:
+    type: string
+    description: Base sequence of the p5 barcode (forward barcode) used for the sample, including its p5 spacer (Ins) sequence.
+
+# columns that the config/individuals.tsv file must have to pass schema validation
+required:
+  - id
+  - unit
+  - p5_barcode

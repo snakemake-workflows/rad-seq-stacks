@@ -1,0 +1,150 @@
+# define individuals and sequencing units
+individuals: "config/individuals.tsv"
+units: "config/units.tsv"
+
+# define the used restriction enzymes
+restriction-enzyme:
+  p5:
+    name: NsiI
+    residue-len: 5
+    residue-seq: TGCAT
+  p7:
+    name: csp6I
+    residue-len: 3
+    residue-seq: TAC
+
+# DBR/UMI handling
+umi:
+  # length of DBR/UMI
+  len: 13
+  # Fixed DBR/UMI suffix (the trailing non-ambiguous entries)
+  # This is only required for quality control.
+  # NOTE: This and the parameter above could be combined into a UMI sequence
+  # parameter, from which length and fixed suffix can be derived
+  fixed_suffix: "GGACG"
+  # maximum levenshtein distance of UMI to be considered a duplicate
+  max_dist: 1
+  # maximum levenshtein distance of read sequence to be considered a duplicate
+  max_seq_dist: 7
+
+reads:
+  # Spacer sequence to join paired end reads.
+  join_seq: NNNNN
+  # Read handling mode. This parameter is used to specify
+  # input files for ustacks, via the force_same_length rule and the
+  # trim_input function.
+  #
+  # Currently three modes are supported: ["p5_only", "merged", "concatenated"]
+  # 
+  # "p5_only" uses only the p5 reads, completely ignoring p7 reads.
+  #
+  #       reads_1.fq
+  #       ----------
+  #       [r1_p5]
+  #       [r2_p5]
+  #       ...
+  #
+  # "merged" (horizontally) merges p5 and p7 read pairs into one long pseudo-single-end read
+  #
+  #       reads_1.fq     reads_2.fq      reads.fq
+  #       ----------     ----------      --------
+  #       [r1_p5]     +  [r1_p7]      =  [r1_p5]+[r1_p7]
+  #       [r2_p5]        [r1_p7]         [r2_p5]+[r2_p7]
+  #       ...            ...             ...
+  #
+  # "concatenated" (vertically) appends the p7 reads to the p5 read file.
+  #
+  #       reads_1.fq     reads_2.fq      reads.fq
+  #       ----------     ----------      --------
+  #       [r1_p5]     +  [r1_p7]      =  [r1_p5]
+  #       [r2_p5]        [r1_p7]         [r2_p5]
+  #       ...            ...             ...
+  #                                      [r1_p7]
+  #                                      [r2_p7]
+  #                                      ...
+  mode: "concatenated"
+  
+# parameters for tools used in the pipeline
+params:
+  stacks:
+    # * max_individual_mm: Number of mismatches allowed between stacks (M)
+    # * max_locus_mm: Number of mismatches allowed between sample loci (n)
+    # * min_reads: Minimum depth of coverage required to create a stack (m)
+    #
+    # Expand or shorted the following list to scan desired parameter spaces:
+    - max_individual_mm: 2
+      max_locus_mm: 2
+      min_reads: 3
+    - max_individual_mm: 5
+      max_locus_mm: 5
+      min_reads: 3
+    - max_individual_mm: 3
+      max_locus_mm: 4
+      min_reads: 3
+  # command line parameters for gstacks, except -I, -O, -B
+  gstacks: ""
+  # command line parameters for process_radtags
+  # --inline-null         use only p5 barcodes
+  # -q                    discard low quality reads
+  # -r                    try to rescue barcodes and rad-tags
+  # --barcode_dist_1      distance for barcode rescue
+  # -D                    capture discarded reads in a file
+  # -i gzfastq            input is fqgzip
+  # -y gzfastq            output as fqgzip
+  process_radtags: "--inline_null -q -r --barcode_dist_1 3 -D -i gzfastq -y gzfastq"
+  populations:
+    # Desired output formats for the stacks populations script.
+    # Possible values are vcf, genepop, fasta, phylip
+    output_types:
+      - vcf
+      - genepop
+      - fasta
+      - phylip
+    # Number of threads used for the stacks populations call.
+    # Other stacks processes are limited to 2 threads.
+    threads:
+      2
+  kraken:
+    # Refer to kraken DB folder, see https://ccb.jhu.edu/software/kraken.
+    # Kraken is used to classify reads for possible contaminations.
+    # Comment out or leave empty in order to disable kraken.
+
+    # Download link for the database. In case you want to use an already existing database
+    # add its path in the db parameter and comment out the db_link parameter.
+    db_link: https://ccb.jhu.edu/software/kraken/dl/minikraken_20171019_4GB.tgz
+
+    # Note that the difference in the day of the date in this file is deliberate.
+    # The contained folder is named as below while the containing archive is named
+    # as specified in the download_link.
+    db: resources/kraken/minikraken_20171013_4GB
+
+qc:
+  # If set to true, the quality control rule fails when any of the checks is violated.
+  # This can terminate a running workflow early, to earlier notice errors.
+  fail_on_error: True
+  # Nr of reads that are randomly chosen from FASTQ files for quality control
+  samples_per_file: 15
+  # parameters for the read extraction step
+  extract:
+    # Percentage of reads that must be retained by process_radtags.
+    # If less reads than the warning threshold are present, this is
+    # mentioned in the logs.
+    warning_threshold: 0.95
+    # If less reads than the error threshold are present, write an error to
+    # stderr or terminate the qc rule with a non-zero error code (depends on
+    # the fail_on_error parameter provided above).
+    error_threshold: 0.85
+
+  violin_plots:
+    # Cutoff value for stack sizes.
+    # All stack sizes beyond this value are ignored in the plot.
+    threshold: 500
+    # Kernel bandwith used for the violin plot.
+    # Cf. bw parameter of seaborn violin plots:
+    # https://seaborn.pydata.org/generated/seaborn.violinplot.html
+    kernel_bandwith: 0.01
+    # Scale of of the figure.
+    # Smaller values result in a less detailed plot with
+    # larger font. For more control adapt the size values
+    # in scripts/plot_stack_sizes.py
+    scale: 2

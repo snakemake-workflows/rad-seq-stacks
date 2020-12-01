@@ -1,0 +1,28 @@
+import pandas as pd
+import numpy as np
+import zlib
+import sys
+
+from snakemake.utils import min_version
+
+min_version("5.29.0")
+
+configfile: "config/config.yaml"
+
+include: "rules/common.smk"
+include: "rules/preprocessing.smk"
+include: "rules/stacks.smk"
+include: "rules/kraken.smk"
+include: "rules/qc.smk"
+
+rule all:
+    input:
+        expand(
+            "results/calls/n={p[max_locus_mm]}.M={p[max_individual_mm]}.m={p[min_reads]}/populations.{e}",
+            p=config["params"]["stacks"],
+            e=pop_suffixes(),
+        ),
+        "results/plots/distribution_comparison/stacks_counts.pdf",
+        "results/plots/distribution_comparison/stacks_size_distribution.pdf",
+        "results/qc.log",
+        kraken_targets,

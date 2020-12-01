@@ -1,8 +1,0 @@
-channels:
-  - conda-forge
-dependencies:
-  - matplotlib =3.0
-  - seaborn
-  - pandas
-  - click
-  - numpy

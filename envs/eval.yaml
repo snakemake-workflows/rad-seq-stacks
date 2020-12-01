@@ -1,9 +1,0 @@
-channels:
-  - conda-forge
-dependencies:
-  - matplotlib =3.0
-  - seaborn =0.9
-  - h5py =2.9
-  - networkx =2.2
-  - pygraphviz =1.5
-  - pyyaml =5.1

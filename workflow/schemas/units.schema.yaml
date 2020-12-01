@@ -1,0 +1,29 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+
+description: an entry in the units sheet
+
+# columns that the config/units.tsv file can have and which type they should be
+properties:
+  unit:
+    type: string
+    description: Sample name/identifier of a sequencing batch
+  p7_barcode:
+    type: string
+    description: Base sequence of the p7 barcode (reverse barcode) used for the sample.
+  p7_spacer:
+    type: int
+    description: Length of the p7 spacer sequence (also referred to as Ins sequence) in base pairs.
+  fq1:
+    type: string
+    description: Path to the p5 read file (_1 or forward reads) for this unit.
+  fq2:
+    type: string
+    description: Path to the p7 read file (_2 or reversed reads) for this unit.
+
+# columns that the config/units.tsv file must have to pass schema validation
+required:
+  - unit
+  - p7_barcode
+  - p7_spacer
+  - fq1
+  - fq2
