@@ -1,7 +1,7 @@
 # Snakemake workflow: rad-seq-stacks
 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.29.0-brightgreen.svg)](https://snakemake.bitbucket.io)
-[![Build Status](https://travis-ci.org/koesterlab/rad-seq-stacks.svg?branch=master)](https://travis-ci.org/koesterlab/rad-seq-stacks)
+![Tests](https://github.com/snakemake-workflows/rad-seq-stacks/workflows/Tests/badge.svg)
 
 ## Authors
 
