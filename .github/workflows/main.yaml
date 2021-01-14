@@ -8,11 +8,24 @@ on:
     branches_ignore: []
 
 jobs:
+  Formatting:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@2.0.0
+    - name: Formatting
+        uses: github/super-linter@v3
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: master
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_SNAKEMAKE_SNAKEFMT: true
   Linting:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Lint workflow
+    - name: Linting
       uses: snakemake/snakemake-github-action@v1.14.0
       with:
         directory: .test/integration_test
@@ -21,7 +34,9 @@ jobs:
 
   Integration-Test:
     runs-on: ubuntu-latest
-    needs: Linting
+    needs:
+      - Linting
+      - Formatting
     steps:
     - uses: actions/checkout@v1
 
