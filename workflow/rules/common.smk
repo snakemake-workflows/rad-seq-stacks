@@ -1,15 +1,9 @@
 # Read in individuals and units
-individuals = pd.read_csv(
-    config["individuals"],
-    sep="\t",
-    dtype=str,
-).set_index("id", drop=False)
+individuals = pd.read_csv(config["individuals"], sep="\t", dtype=str,).set_index(
+    "id", drop=False
+)
 individuals["hash"] = np.arange(len(individuals))
-units = pd.read_csv(
-    config["units"],
-    sep="\t",
-    dtype=str,
-).set_index("unit", drop=False)
+units = pd.read_csv(config["units"], sep="\t", dtype=str,).set_index("unit", drop=False)
 
 
 # Specify where to find the kraken database.
@@ -17,9 +11,13 @@ units = pd.read_csv(
 kraken_db = config["params"]["kraken"].get("db")
 kraken_targets = []
 if kraken_db:
-    kraken_targets = expand(["results/plots/{unit}.kmer-mapping.svg",
-                             "results/plots/{unit}.classification.svg"],
-                            unit=units.unit)
+    kraken_targets = expand(
+        [
+            "results/plots/{unit}.kmer-mapping.svg",
+            "results/plots/{unit}.classification.svg",
+        ],
+        unit=units.unit,
+    )
 
 
 def param_str(s):
@@ -52,12 +50,14 @@ def pop_suffixes():
         try:
             suffixes.extend(pop_file_suffixes[f_type])
         except KeyError:
-            print(f"Invalid output type {f_type} for populations. Should be one of {pop_file_suffixes.keys()}.", file=sys.stderr)
+            print(
+                f"Invalid output type {f_type} for populations. Should be one of {pop_file_suffixes.keys()}.",
+                file=sys.stderr,
+            )
     if suffixes:
         return suffixes
     else:
-        print(f"No valid output files specified for populations.",
-              file=sys.stderr)
+        print(f"No valid output files specified for populations.", file=sys.stderr)
         sys.exit(1)
 
 
@@ -74,11 +74,13 @@ def trim_input():
     elif mode == "concatenated":
         return "analysis/concatenated/{individual}.fq.gz"
     else:
-        raise ValueError(f"Invalid mode: {mode}. Should be 'p5_only', 'merged', or 'concatenated'")
+        raise ValueError(
+            f"Invalid mode: {mode}. Should be 'p5_only', 'merged', or 'concatenated'"
+        )
 
 
 def fmt_ustacks_input(wildcards, input):
-    return ["-s {}".format(f[:-len(".tags.tsv.gz")]) for f in input.ustacks]
+    return ["-s {}".format(f[: -len(".tags.tsv.gz")]) for f in input.ustacks]
 
 
 def get_cargopath(w, input):
@@ -93,5 +95,7 @@ def get_cargopath(w, input):
 def get_all_parameter_sets():
     all_sets = []
     for parameters in config["params"]["stacks"]:
-        all_sets.append(f"n={parameters['max_locus_mm']}.M={parameters['max_individual_mm']}.m={parameters['min_reads']}")
+        all_sets.append(
+            f"n={parameters['max_locus_mm']}.M={parameters['max_individual_mm']}.m={parameters['min_reads']}"
+        )
     return all_sets

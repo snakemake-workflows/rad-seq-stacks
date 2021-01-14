@@ -3,16 +3,16 @@
 # per infividual and data set.
 rule ustacks:
     input:
-        "analysis/trimmed/{individual}/{individual}.fq.gz"
+        "analysis/trimmed/{individual}/{individual}.fq.gz",
     output:
         "analysis/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.tags.tsv.gz",
         "analysis/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.snps.tsv.gz",
-        "analysis/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.alleles.tsv.gz"
+        "analysis/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.alleles.tsv.gz",
     log:
-        "logs/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.log"
+        "logs/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.log",
     params:
         outdir=get_outdir,
-        hash=lambda w: individuals.loc[w.individual, "hash"]
+        hash=lambda w: individuals.loc[w.individual, "hash"],
     conda:
         "../envs/stacks.yaml"
     benchmark:
@@ -28,7 +28,8 @@ rule ustacks:
 
 ustacks_individuals = expand(
     "analysis/ustacks/M={{max_individual_mm}}.m={{min_reads}}/{individual}.tags.tsv.gz",
-    individual=individuals.id)
+    individual=individuals.id,
+)
 
 
 # catalog stacks: Build a catalog of loci from loci assembled by ustacks.
@@ -36,16 +37,16 @@ ustacks_individuals = expand(
 # one set of files per data set.
 rule cstacks:
     input:
-        ustacks=ustacks_individuals
+        ustacks=ustacks_individuals,
     output:
         "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.tags.tsv.gz",
         "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.snps.tsv.gz",
-        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.alleles.tsv.gz"
+        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.alleles.tsv.gz",
     log:
-        "logs/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+        "logs/cstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log",
     params:
         outdir=get_outdir,
-        individuals=fmt_ustacks_input
+        individuals=fmt_ustacks_input,
     conda:
         "../envs/stacks.yaml"
     benchmark:
@@ -60,18 +61,20 @@ rule cstacks:
 rule sstacks:
     input:
         ustacks=ustacks_individuals,
-        cstacks=rules.cstacks.output[0]
+        cstacks=rules.cstacks.output[0],
     output:
-        expand("analysis/stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{individual}.matches.tsv.gz",
-               individual=individuals.id),
+        expand(
+            "analysis/stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{individual}.matches.tsv.gz",
+            individual=individuals.id,
+        ),
     log:
-        "logs/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+        "logs/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log",
     benchmark:
         "benchmarks/sstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.txt"
     params:
         outdir=get_outdir,
         individuals=fmt_ustacks_input,
-        cstacks_dir=lambda w, input: os.path.dirname(input.cstacks)
+        cstacks_dir=lambda w, input: os.path.dirname(input.cstacks),
     conda:
         "../envs/stacks.yaml"
     threads: 2
@@ -83,11 +86,11 @@ rule sstacks:
 # Symlink ustacks results to avoid copying them to where tsv2bam expects them.
 rule link_ustacks:
     input:
-        "analysis/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz"
+        "analysis/ustacks/M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz",
     output:
         "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.{type}.tsv.gz",
     log:
-        "logs/ustacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.{type}.log"
+        "logs/ustacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.{type}.log",
     conda:
         "../envs/python.yaml"
     shell:
@@ -99,18 +102,20 @@ rule link_ustacks:
 rule tsv2bam:
     input:
         sstacks=rules.sstacks.output,
-        ustacks=expand("analysis/stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{{individual}}.{type}.tsv.gz",
-                       type=["tags", "snps", "alleles"]),
+        ustacks=expand(
+            "analysis/stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{{individual}}.{type}.tsv.gz",
+            type=["tags", "snps", "alleles"],
+        ),
         reads="analysis/trimmed/{individual}/{individual}.fq.gz",
     output:
-        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.matches.bam"
+        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.matches.bam",
     log:
-        "logs/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.log"
+        "logs/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.log",
     benchmark:
         "benchmarks/tsv2bam/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/{individual}.txt"
     params:
         sstacks_dir=lambda w, output: os.path.dirname(output[0]),
-        read_dir=lambda w, input: os.path.dirname(input.reads)
+        read_dir=lambda w, input: os.path.dirname(input.reads),
     conda:
         "../envs/stacks.yaml"
     shell:
@@ -125,20 +130,22 @@ rule tsv2bam:
 # name line patterns in input files.
 rule gstacks:
     input:
-        bams=expand("analysis/stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{individual}.matches.bam",
-                    individual=individuals.id),
-        popmap="resources/population-map.tsv"
+        bams=expand(
+            "analysis/stacks/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/{individual}.matches.bam",
+            individual=individuals.id,
+        ),
+        popmap="resources/population-map.tsv",
     output:
         "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls",
-        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.gz"
+        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.gz",
     log:
-        "logs/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+        "logs/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log",
     benchmark:
         "benchmarks/gstacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     params:
         outdir=get_outdir,
         bam_dir=lambda w, input: os.path.dirname(input.bams[0]),
-        config=config["params"]["gstacks"]
+        config=config["params"]["gstacks"],
     conda:
         "../envs/stacks.yaml"
     threads: 2
@@ -149,7 +156,7 @@ rule gstacks:
 
 rule populations:
     input:
-        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls"
+        "analysis/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.calls",
     output:
         expand(
             "results/calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{e}",
@@ -174,17 +181,18 @@ rule populations:
             subcategory=f"n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}",
         ),
     log:
-        "logs/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
+        "logs/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log",
     benchmark:
         "benchmarks/populations/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.log"
     params:
         outdir=lambda w, output: os.path.dirname(output[0]),
         gstacks_dir=lambda w, input: os.path.dirname(input[0]),
-        output_types=[f"--{t}" for t in config["params"]["populations"]["output_types"]],
+        output_types=[
+            f"--{t}" for t in config["params"]["populations"]["output_types"]
+        ],
     conda:
         "../envs/stacks.yaml"
-    threads:
-        config["params"]["populations"]["threads"]
+    threads: config["params"]["populations"]["threads"]
     shell:
         "mkdir -p {params.outdir}; "
         "populations -t {threads} -P {params.gstacks_dir} "

@@ -1,13 +1,13 @@
 # compute the lengths of stacks loci by counting lines in the tags.tsv files
 rule count:
     input:
-        tsv="analysis/stacks/{parameter_set}/{individual}.tags.tsv.gz"
+        tsv="analysis/stacks/{parameter_set}/{individual}.tags.tsv.gz",
     output:
-        dat="analysis/counts/{parameter_set}/{individual}.dat"
+        dat="analysis/counts/{parameter_set}/{individual}.dat",
     params:
-        cargo_path=get_cargopath
+        cargo_path=get_cargopath,
     log:
-        "logs/count/{parameter_set}/{individual}.log"
+        "logs/count/{parameter_set}/{individual}.log",
     conda:
         "../envs/rust.yaml"
     shell:
@@ -39,7 +39,7 @@ rule plot_comparison:
         sizes_dataframe="results/plots/distribution_comparison/sizes_dataframe.csv",
         counts_dataframe="results/plots/distribution_comparison/counts_dataframe.csv",
     log:
-        "logs/plot_comparison.log"
+        "logs/plot_comparison.log",
     conda:
         "../envs/plot_stacks_dist.yaml"
     params:
@@ -52,39 +52,31 @@ rule plot_comparison:
 
 rule post_run_qc:
     input:
-        trimmed_spacer = expand(
-            "analysis/trimmed-spacer/{unit}.2.fq.gz",
-            unit=units.unit,
+        trimmed_spacer=expand(
+            "analysis/trimmed-spacer/{unit}.2.fq.gz", unit=units.unit,
         ),
-        consensus_fq1 = expand(
-            "analysis/dedup/{unit}.consensus.1.fq.gz",
-            unit=units.unit,
+        consensus_fq1=expand(
+            "analysis/dedup/{unit}.consensus.1.fq.gz", unit=units.unit,
         ),
-        consensus_fq2 = expand(
-            "analysis/dedup/{unit}.consensus.2.fq.gz",
-            unit=units.unit,
+        consensus_fq2=expand(
+            "analysis/dedup/{unit}.consensus.2.fq.gz", unit=units.unit,
         ),
-        extracted_fq1 = expand(
-            "analysis/extracted/{individual}.1.fq.gz",
-            individual=individuals.id
+        extracted_fq1=expand(
+            "analysis/extracted/{individual}.1.fq.gz", individual=individuals.id
         ),
-        extracted_fq2 = expand(
-            "analysis/extracted/{individual}.2.fq.gz",
-            individual=individuals.id
+        extracted_fq2=expand(
+            "analysis/extracted/{individual}.2.fq.gz", individual=individuals.id
         ),
-        extract_logs = expand(
-            "logs/extract/{unit}.log",
-            unit=units.unit,
-        )
+        extract_logs=expand("logs/extract/{unit}.log", unit=units.unit,),
     output:
         qc_log=report(
             "results/qc.log",
             caption="../report/workflow_qc.rst",
             category="QC",
             subcategory="Workflow",
-        )
+        ),
     log:
-        "logs/post_run_qc/post_run_qc.log"
+        "logs/post_run_qc/post_run_qc.log",
     params:
         dbr_suffix=config["umi"]["fixed_suffix"],
         p5_residue=config["restriction-enzyme"]["p5"]["residue-seq"],
